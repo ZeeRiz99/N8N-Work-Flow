@@ -1,0 +1,16 @@
+# Backlog of known limits
+
+Each phase logs its known limits here. They are fixed together after the last build phase, unless one blocks a gate.
+
+## From Phase 1
+
+| # | Limit | Where | Fix later |
+|---|---|---|---|
+| 1 | `inspect-env.ps1` flags disks under 20 GB, but the master prompt wants D: flagged under 30 GB | `scripts/inspect-env.ps1` | Align the threshold |
+| 2 | Network check is TCP-only; it cannot tell DNS failures from blocking | `scripts/inspect-env.ps1` | Add a DNS lookup step |
+| 3 | The audit does not check `git config core.longpaths`; Windows long paths are disabled | `scripts/inspect-env.ps1` | Add the check; consider enabling long paths (system setting, ask first) |
+| 4 | Follow-ups, AI Assistant, Analytics and Integrations screens are not drawn | `docs/design/` | Draw before P8–P9 or design in code from the tokens |
+| 5 | Mockups have no loading, empty or error states | `docs/design/` | Built in code (master prompt §10.5) |
+| 6 | Mermaid diagrams in the docs are not rendered or checked | `docs/ARCHITECTURE.md`, `docs/DATABASE_SCHEMA.md` | Render after P2 and fix any syntax errors |
+| 7 | Gemini key and billing status unknown | §8.8 | Ask in P2; synthetic data only until billing is confirmed |
+| 8 | Telegram needs a system-wide VPN on the dev network | ADR 005 | None needed for production; document for demos |
