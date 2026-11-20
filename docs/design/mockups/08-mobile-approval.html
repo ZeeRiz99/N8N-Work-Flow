@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Approve on phone</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Public Sans',system-ui,sans-serif;color:#1A1D2B;background:#F6F7FB}
+a{color:#3730A3}a:hover{color:#2A2480}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid #4338CA;outline-offset:2px}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#F6F7FB;font-family:'Public Sans',system-ui,sans-serif;color:#1A1D2B;font-size:15px;line-height:1.5;display:flex;flex-direction:column;overflow:hidden">
+<div style="background:#1A1D2B;color:#FFFFFF;padding:6px 16px;font-size:12px;text-align:center"><strong style="font-weight:600">Demo data</strong> · fictional people</div>
+<header style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px 6px 4px;background:#FFFFFF;border-bottom:1px solid #E3E6EF">
+<a href="03-approvals.html" style="min-height:44px;box-sizing:border-box;padding:0 10px;display:inline-flex;align-items:center;gap:4px;font-weight:600;text-decoration:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>Approvals</a>
+<span style="font-size:13px;color:#5A6075">2 of 4 waiting</span>
+<a href="03-approvals.html" aria-label="Next draft" style="width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;color:#3A4057"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+</header>
+<main style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+<section style="background:#FFFFFF;border:1px solid #E3E6EF;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+<div><h1 style="margin:0;font-size:20px;line-height:1.25;font-weight:700">Amira Hassan</h1><p style="margin:2px 0 0;font-size:13px;color:#5A6075">Cedar &amp; Pine Bakery · Website Development</p></div>
+<span style="display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 8px;border-radius:999px;background:#FCE7E1;color:#A32A12;font-size:12px;font-weight:600;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="2.6" height="4" rx="1" fill="currentColor"/><rect x="4.7" y="4" width="2.6" height="7" rx="1" fill="currentColor"/><rect x="8.4" y="1" width="2.6" height="10" rx="1" fill="currentColor"/></svg>High 85</span>
+</div>
+<ul style="margin:0;padding-left:18px;font-size:13px;color:#3A4057;display:flex;flex-direction:column;gap:2px">
+<li>+20 Budget fit: $2,000 is inside $1,500 to $5,000</li>
+<li>+15 Urgency: wants it within one month</li>
+<li>0 of 10 Engagement: first message, no phone</li>
+</ul>
+<details style="font-size:13px"><summary style="min-height:36px;display:flex;align-items:center;font-weight:600;color:#3730A3;cursor:pointer">What they wrote</summary><p style="margin:4px 0 0;padding:10px;border-radius:8px;background:#F6F7FB;color:#3A4057">Hi, we run a bakery in Cedar Falls and need a new website with online ordering. Our budget is around $2,000. We'd like it live within a month, before the holiday rush. Can you send a quote? Thanks, Amira</p></details>
+</section>
+<section style="background:#FFFFFF;border:1px solid #E3E6EF;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0;font-size:16px;font-weight:600">Draft reply</h2><span style="font-size:12px;color:#5A6075">Not sent</span></div>
+<p style="margin:0;font-size:13px;color:#3A4057">To: amira@example.com</p>
+<label for="m-subject" style="font-size:13px;font-weight:600">Subject</label>
+<input id="m-subject" type="text" value="Your website project for Cedar &amp; Pine Bakery" style="width:100%;box-sizing:border-box;min-height:44px;padding:0 12px;border:1px solid #CDD2E0;border-radius:8px;font:inherit;font-size:15px;color:#1A1D2B;background:#FFFFFF">
+<label for="m-body" style="font-size:13px;font-weight:600">Message</label>
+<textarea id="m-body" rows="9" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #CDD2E0;border-radius:8px;font:inherit;font-size:15px;line-height:1.5;color:#1A1D2B;background:#FFFFFF;resize:vertical">Hi Amira,
+
+Thanks for getting in touch about a new website for Cedar &amp; Pine Bakery. A site with online ordering fits our Website Development service, which usually ranges from $1,500 to $5,000 depending on scope.
+
+To send you an accurate quote, could you tell me how many products you would list, how you take payment today, and the date you would like the site live?
+
+Best regards,
+Jordan Lee</textarea>
+<p style="margin:0;font-size:12px;color:#444B63">Opt-out line is added automatically.</p>
+<p style="margin:0;display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;background:#EEF7F1;font-size:13px;font-weight:600;color:#1E5E3A"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>5 of 5 automatic checks passed</p>
+</section>
+</main>
+<footer style="display:flex;flex-direction:column;gap:8px;padding:12px 16px 16px;background:#FFFFFF;border-top:1px solid #E3E6EF">
+<button type="button" style="min-height:48px;border:0;border-radius:10px;background:#4338CA;color:#FFFFFF;font:inherit;font-weight:600;cursor:pointer">Approve and send</button>
+<div style="display:flex;gap:8px">
+<button type="button" style="flex:1;min-height:44px;border:1px solid #CDD2E0;border-radius:10px;background:#FFFFFF;color:#A32A12;font:inherit;font-weight:600;cursor:pointer">Reject</button>
+<button type="button" style="flex:1;min-height:44px;border:1px solid #CDD2E0;border-radius:10px;background:#FFFFFF;color:#1A1D2B;font:inherit;font-weight:500;cursor:pointer">Save edits</button>
+</div>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

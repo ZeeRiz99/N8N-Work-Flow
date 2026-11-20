@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Approvals queue</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Public Sans',system-ui,sans-serif;color:#1A1D2B;background:#F6F7FB}
+a{color:#3730A3}a:hover{color:#2A2480}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #4338CA;outline-offset:2px}
+kbd{font-family:inherit;font-size:11px;font-weight:600;padding:1px 6px;border:1px solid #CDD2E0;border-radius:4px;background:#FFFFFF;color:#3A4057}
+</style>
+</helmet>
+<div style="min-height:1320px;background:#F6F7FB;font-family:'Public Sans',system-ui,sans-serif;color:#1A1D2B;font-size:14px;line-height:1.5;display:flex;flex-direction:column">
+<div style="background:#1A1D2B;color:#FFFFFF;padding:8px 24px;font-size:13px;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;justify-content:center"><strong style="font-weight:600">Demo data</strong><span>Fictional people and companies. This is a design mockup, not a working app.</span></div>
+<div style="display:flex;flex-wrap:wrap;flex:1;align-items:stretch">
+<aside style="flex:0 0 232px;width:232px;box-sizing:border-box;background:#FFFFFF;border-right:1px solid #E3E6EF;padding:20px 16px;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 4px"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#4338CA"/><path d="M13 9.5 8 14.5l5 5" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 14.5h9.5a5.5 5.5 0 0 1 5.5 5.5v2" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:17px;font-weight:700;letter-spacing:-0.01em">Replyline</span></div>
+<div style="border:1px solid #E3E6EF;border-radius:10px;padding:10px 12px;display:flex;flex-direction:column"><span style="font-size:12px;color:#5A6075">Workspace</span><span style="font-weight:600">Harbor Web Studio</span></div>
+<nav aria-label="Main" style="display:flex;flex-direction:column;gap:2px">
+<a href="01-overview.html" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;color:#3A4057;font-weight:500;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Overview</a>
+<a href="05-leads.html" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;color:#3A4057;font-weight:500;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.4c2.2.7 3.5 2.6 3.5 5.6"/></svg>Leads</a>
+<a href="03-approvals.html" aria-current="page" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;background:#EEF0FF;color:#3730A3;font-weight:600;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg><span style="flex:1">Approvals</span><span style="min-width:22px;height:22px;box-sizing:border-box;padding:0 6px;border-radius:11px;background:#4338CA;color:#FFFFFF;font-size:12px;font-weight:600;display:inline-flex;align-items:center;justify-content:center">4</span></a>
+<a href="#" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;color:#3A4057;font-weight:500;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Follow-ups</a>
+<a href="#" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;color:#3A4057;font-weight:500;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>AI Assistant</a>
+<a href="06-automation.html" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;color:#3A4057;font-weight:500;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 8.5v7M8.5 6H12a4 4 0 0 1 4 4M8.5 18H12a4 4 0 0 0 4-4"/></svg>Automation</a>
+<a href="#" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;color:#3A4057;font-weight:500;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20v-9M12 20V5M19 20v-6"/></svg>Analytics</a>
+<a href="#" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;color:#3A4057;font-weight:500;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg>Integrations</a>
+<a href="07-settings-scoring.html" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:8px;color:#3A4057;font-weight:500;text-decoration:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Settings</a>
+</nav>
+<div style="margin-top:auto;border-radius:10px;background:#F3F4FA;padding:12px;font-size:12px;color:#444B63;display:flex;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:0 0 auto;margin-top:2px"><path d="M12 3 4.5 6v5.5c0 4.4 3 8 7.5 9.5 4.5-1.5 7.5-5.1 7.5-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg><span>Drafts only. Nothing is sent without your approval.</span></div>
+</aside>
+<main style="flex:999 1 560px;min-width:0;box-sizing:border-box;padding:20px 32px 40px">
+<div style="max-width:1180px;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:1px solid #E3E6EF">
+<div style="flex:1 1 280px;max-width:420px;position:relative"><label for="q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Search leads, companies or emails</label><input id="q" type="search" placeholder="Search leads, companies or emails" style="width:100%;box-sizing:border-box;min-height:44px;padding:0 12px;border:1px solid #CDD2E0;border-radius:8px;font:inherit;color:#1A1D2B;background:#FFFFFF"></div>
+<div style="display:flex;align-items:center;gap:8px"><button type="button" aria-label="Notifications, 3 unread" style="position:relative;width:44px;height:44px;border:1px solid #CDD2E0;border-radius:8px;background:#FFFFFF;color:#3A4057;cursor:pointer;display:inline-flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span style="position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:#D8553A"></span></button><button type="button" style="min-height:44px;padding:0 12px 0 6px;border:1px solid #CDD2E0;border-radius:8px;background:#FFFFFF;color:#1A1D2B;font:inherit;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px"><span aria-hidden="true" style="width:30px;height:30px;border-radius:50%;background:#E9E8FF;color:#3730A3;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">JL</span>Jordan Lee</button></div>
+</div>
+<header style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px">
+<div><h1 style="margin:0;font-size:26px;line-height:1.2;font-weight:700;letter-spacing:-0.01em">Approvals</h1><p style="margin:4px 0 0;color:#5A6075">4 drafts waiting, highest score first</p></div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px"><span style="font-size:12px;color:#5A6075">Shortcuts: <kbd>A</kbd> approve · <kbd>R</kbd> reject · <kbd>J</kbd> next · <kbd>K</kbd> previous</span><span style="padding:6px 12px;border-radius:8px;background:#F3F4FA;color:#444B63;font-size:13px">Nothing here has been sent</span></div>
+</header>
+<div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<section aria-label="Drafts waiting" style="flex:1 1 260px;max-width:320px;min-width:0;display:flex;flex-direction:column;gap:10px">
+<a href="03-approvals.html" style="display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid #E3E6EF;border-radius:12px;background:#FFFFFF;color:#1A1D2B;text-decoration:none"><span style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>Priya Nair</strong><span style="display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 8px;border-radius:999px;background:#FCE7E1;color:#A32A12;font-size:12px;font-weight:600"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="2.6" height="4" rx="1" fill="currentColor"/><rect x="4.7" y="4" width="2.6" height="7" rx="1" fill="currentColor"/><rect x="8.4" y="1" width="2.6" height="10" rx="1" fill="currentColor"/></svg>High 91</span></span><span style="font-size:13px;color:#5A6075">Lumen Dental Group · AI Chatbot</span><span style="font-size:12px;color:#5A6075">Waiting 6 min</span></a>
+<a href="03-approvals.html" aria-current="true" style="display:flex;flex-direction:column;gap:6px;padding:14px;border:2px solid #4338CA;border-radius:12px;background:#F3F4FF;color:#1A1D2B;text-decoration:none"><span style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>Amira Hassan</strong><span style="display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 8px;border-radius:999px;background:#FCE7E1;color:#A32A12;font-size:12px;font-weight:600"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="2.6" height="4" rx="1" fill="currentColor"/><rect x="4.7" y="4" width="2.6" height="7" rx="1" fill="currentColor"/><rect x="8.4" y="1" width="2.6" height="10" rx="1" fill="currentColor"/></svg>High 85</span></span><span style="font-size:13px;color:#3A4057">Cedar &amp; Pine Bakery · Website Development</span><span style="font-size:12px;color:#3A4057">Waiting 12 min · Open now</span></a>
+<a href="03-approvals.html" style="display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid #E3E6EF;border-radius:12px;background:#FFFFFF;color:#1A1D2B;text-decoration:none"><span style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>Tomás Rivera</strong><span style="display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 8px;border-radius:999px;background:#FDF0C8;color:#7A4A05;font-size:12px;font-weight:600"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="2.6" height="4" rx="1" fill="currentColor"/><rect x="4.7" y="4" width="2.6" height="7" rx="1" fill="currentColor"/><rect x="8.4" y="1" width="2.6" height="10" rx="1" fill="currentColor" fill-opacity=".3"/></svg>Medium 78</span></span><span style="font-size:13px;color:#5A6075">Rivera Auto Care · Booking System</span><span style="font-size:12px;color:#5A6075">Waiting 1 h</span></a>
+<a href="03-approvals.html" style="display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid #E3E6EF;border-radius:12px;background:#FFFFFF;color:#1A1D2B;text-decoration:none"><span style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong>Daniel Okafor</strong><span style="display:inline-flex;align-items:center;gap:6px;padding:2px 10px 2px 8px;border-radius:999px;background:#FDF0C8;color:#7A4A05;font-size:12px;font-weight:600"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="7" width="2.6" height="4" rx="1" fill="currentColor"/><rect x="4.7" y="4" width="2.6" height="7" rx="1" fill="currentColor"/><rect x="8.4" y="1" width="2.6" height="10" rx="1" fill="currentColor" fill-opacity=".3"/></svg>Medium 64</span></span><span style="font-size:13px;color:#5A6075">Okafor Logistics · Automation Setup</span><span style="font-size:12px;color:#5A6075">Waiting 3 h</span></a>
+</section>
+<div style="flex:3 1 560px;min-width:0;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+<section style="flex:1 1 250px;min-width:0;background:#FFFFFF;border:1px solid #E3E6EF;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px">
+<h2 style="margin:0;font-size:16px;font-weight:600">Lead context</h2>
+<dl style="margin:0;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #EEF0F6"><dt style="color:#5A6075">Service</dt><dd style="margin:0;font-weight:500;text-align:right">Website Development</dd></div>
+<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #EEF0F6"><dt style="color:#5A6075">Budget</dt><dd style="margin:0;font-weight:500;text-align:right">About $2,000</dd></div>
+<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #EEF0F6"><dt style="color:#5A6075">Timeline</dt><dd style="margin:0;font-weight:500;text-align:right">Within 1 month</dd></div>
+<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0"><dt style="color:#5A6075">Phone</dt><dd style="margin:0;color:#5A6075;font-style:italic;text-align:right">Not provided</dd></div>
+</dl>
+<div style="display:flex;flex-direction:column;gap:6px">
+<h3 style="margin:0;font-size:13px;font-weight:600">Biggest score factors</h3>
+<ul style="margin:0;padding-left:18px;font-size:13px;color:#3A4057;display:flex;flex-direction:column;gap:4px">
+<li>+20 Budget fit: $2,000 is inside $1,500 to $5,000</li>
+<li>+17 Buying intent: asks for a quote</li>
+<li>+15 Urgency: wants it within one month</li>
+<li>0 of 10 Engagement: first message, no phone</li>
+</ul>
+<a href="02-lead-detail.html" style="font-size:13px;font-weight:600">See the full score breakdown</a>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<h3 style="margin:0;font-size:13px;font-weight:600">What they wrote</h3>
+<p style="margin:0;padding:12px;border-radius:8px;background:#F6F7FB;font-size:13px;color:#3A4057">Hi, we run a bakery in Cedar Falls and need a new website with online ordering. Our budget is around $2,000. We'd like it live within a month, before the holiday rush. Can you send a quote? Thanks, Amira</p>
+</div>
+</section>
+<section style="flex:2 1 380px;min-width:0;background:#FFFFFF;border:1px solid #E3E6EF;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px"><h2 style="margin:0;font-size:16px;font-weight:600">Draft reply</h2><span style="padding:2px 10px;border-radius:999px;background:#E8EBF3;color:#444B63;font-size:12px;font-weight:600">Written by AI · Version 1 · Not sent</span></div>
+<dl style="margin:0;display:flex;flex-direction:column;gap:2px">
+<dt style="font-size:13px;font-weight:600">To</dt>
+<dd style="margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-height:44px;padding:0 12px;border-radius:8px;background:#F6F7FB;color:#1A1D2B">Amira Hassan &lt;amira@example.com&gt;<span style="font-size:12px;color:#5A6075">From the lead record. Change it on the lead.</span></dd>
+</dl>
+<div style="display:flex;flex-direction:column;gap:6px">
+<label for="subject" style="font-size:13px;font-weight:600">Subject</label>
+<input id="subject" type="text" value="Your website project for Cedar &amp; Pine Bakery" style="width:100%;box-sizing:border-box;min-height:44px;padding:0 12px;border:1px solid #CDD2E0;border-radius:8px;font:inherit;color:#1A1D2B;background:#FFFFFF">
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<label for="body" style="font-size:13px;font-weight:600">Message</label>
+<textarea id="body" rows="13" style="width:100%;box-sizing:border-box;min-height:270px;padding:12px;border:1px solid #CDD2E0;border-radius:8px;font:inherit;line-height:1.6;color:#1A1D2B;background:#FFFFFF;resize:vertical">Hi Amira,
+
+Thanks for getting in touch about a new website for Cedar &amp; Pine Bakery. A site with online ordering fits our Website Development service, which usually ranges from $1,500 to $5,000 depending on scope.
+
+To send you an accurate quote, could you tell me:
+1. Roughly how many products you would list?
+2. How you take payment today?
+3. The date you would like the site live?
+
+If a call is easier, reply with a time that suits you.
+
+Best regards,
+Jordan Lee
+Harbor Web Studio</textarea>
+<div style="display:flex;gap:8px;padding:10px 12px;border:1px dashed #CDD2E0;border-radius:8px;background:#F6F7FB;font-size:12px;color:#444B63"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:0 0 auto;margin-top:2px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span><strong style="font-weight:600">Added to every email, can't be edited:</strong> If you'd rather not hear from us again, reply STOP and we won't contact you about this request.</span></div>
+</div>
+<section aria-label="Automatic checks" style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:8px;background:#EEF7F1">
+<h3 style="margin:0;font-size:13px;font-weight:600;color:#1E5E3A">Automatic checks: 5 of 5 passed</h3>
+<ul style="margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:4px 18px;font-size:13px;color:#1A1D2B">
+<li style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E5E3A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Services and prices match your list</li>
+<li style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E5E3A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>No promised dates, meetings or discounts</li>
+<li style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E5E3A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>No links outside your allowed list</li>
+<li style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E5E3A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Opt-out line added</li>
+<li style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1E5E3A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Not on the do-not-contact list</li>
+</ul>
+<span style="font-size:12px;color:#3A4057">Checks run again when you save edits.</span>
+</section>
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 16px;padding-top:16px;border-top:1px solid #EEF0F6">
+<span style="flex:1 1 220px;font-size:12px;color:#5A6075">Approving sends this email from hello@harbor-web.example.com and logs it on the lead.</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<button type="button" style="min-height:44px;padding:0 16px;border:1px solid #CDD2E0;border-radius:8px;background:#FFFFFF;color:#A32A12;font:inherit;font-weight:600;cursor:pointer">Reject with reason</button>
+<button type="button" style="min-height:44px;padding:0 16px;border:1px solid #CDD2E0;border-radius:8px;background:#FFFFFF;color:#1A1D2B;font:inherit;font-weight:500;cursor:pointer">Save edits</button>
+<button type="button" style="min-height:44px;padding:0 20px;border:0;border-radius:8px;background:#4338CA;color:#FFFFFF;font:inherit;font-weight:600;cursor:pointer">Approve and send</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1320}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
