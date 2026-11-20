@@ -1,6 +1,6 @@
 # Installation plan (Phase 2)
 
-Status: **proposed in Phase 1, awaiting approval.** Nothing below is installed yet except the GitHub CLI (approved and installed on 2026-11-21).
+Status: **approved by the developer on 2026-11-21 (Phase 1 gate).** Each install still runs one at a time in Phase 2, with its result reported. Nothing below is installed yet except the GitHub CLI (approved and installed on 2026-11-21).
 Machine: Windows 11 Pro build 26300, Intel i5-8365U (4 cores / 8 threads), **7.8 GB RAM**, C: 30.4 GB free, D: 60.6 GB free. Audit: `scripts/inspect-env.ps1`, run 2026-11-20.
 
 ## 1. What is already present

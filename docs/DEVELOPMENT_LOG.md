@@ -2,6 +2,11 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-21: Phase 1 gate passed
+
+- Developer approved the installation plan, the architecture and ADRs 001–010, and the draft schema ("ok to go").
+- **Deviation:** merged `phase/01-discovery` into `main` locally (no GitHub remote yet, no CI yet). From P2 on, phases merge through pull requests once the repo exists.
+
 ## 2026-11-21: Phase 1 (discovery and architecture)
 
 - Master prompt v2 reviewed top to bottom; v3 written (42 exact-text edits, all matched). Backup of v2 kept outside the repo.

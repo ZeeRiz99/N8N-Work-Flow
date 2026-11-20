@@ -1,6 +1,6 @@
 # Replyline database schema
 
-Status: **DRAFT for approval in Phase 1.** Nothing is built until approved; finalizing the schema is a C3 stop-and-ask item. Tables arrive through Alembic migrations in the phase that first needs them.
+Status: **Approved design (Phase 1 gate, 2026-11-21).** Column-level details are still settled per phase in migrations; any change to the approved structure is a C3 stop-and-ask item. Tables arrive through Alembic migrations in the phase that first needs them.
 Source of truth for column lists: `docs/MASTER_PROMPT.md` §6 (v3).
 
 ## Conventions
