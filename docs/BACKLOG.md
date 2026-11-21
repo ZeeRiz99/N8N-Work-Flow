@@ -14,3 +14,9 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | 6 | Mermaid diagrams in the docs are not rendered or checked | `docs/ARCHITECTURE.md`, `docs/DATABASE_SCHEMA.md` | Render after P2 and fix any syntax errors |
 | 7 | Gemini key and billing status unknown | §8.8 | Ask in P2; synthetic data only until billing is confirmed |
 | 8 | Telegram needs a system-wide VPN on the dev network | ADR 005 | None needed for production; document for demos |
+
+## From Phase 2
+
+| # | Limit | Where | Fix later |
+|---|---|---|---|
+| 9 | Starlette warns that `TestClient` with `httpx` is deprecated and suggests `httpx2` | `backend/tests` | Switch the dev dependency once `httpx2` is stable for FastAPI's test client |
