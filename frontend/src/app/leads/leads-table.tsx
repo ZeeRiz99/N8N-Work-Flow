@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { AiStatusPill, PriorityBadge } from "@/components/badges";
-import { api, ApiError, type LeadRow, type Page } from "@/lib/api";
+import { api, ApiError, AuthRequired, type LeadRow, type Page } from "@/lib/api";
 
 const POLL_FAST_MS = 2000; // while any lead is still being analyzed
 const POLL_SLOW_MS = 10000;
@@ -26,6 +26,10 @@ export function LeadsTable() {
       setData(await api.leads());
       setError(null);
     } catch (e) {
+      if (e instanceof AuthRequired) {
+        window.location.assign("/login?next=/leads");
+        return;
+      }
       const rid = e instanceof ApiError ? e.body?.error.request_id : undefined;
       setError(
         e instanceof ApiError
