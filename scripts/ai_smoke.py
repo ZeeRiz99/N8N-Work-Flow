@@ -57,6 +57,14 @@ def status_of(exc: Exception) -> str:
     return " | ".join(parts)
 
 
+def version_key(name: str) -> tuple[int, ...]:
+    """'gemini-3.8-flash' -> (3, 8); unknown -> (0,)."""
+    import re
+
+    match = re.search(r"(\d+(?:\.\d+)*)", name)
+    return tuple(int(p) for p in match.group(1).split(".")) if match else (0,)
+
+
 def check_key(name: str, key: str) -> bool:
     if not key:
         print(f"{name}: missing. Save it with .\\scripts\\set-secret.ps1 {name}")
@@ -127,27 +135,40 @@ def run_gemini(env: AiEnv) -> int:
     print(
         f"Flash models this key can use ({len(names)}): {', '.join(sorted(names)[:12]) or 'none'}"
     )
-    model = env.gemini_model or next(
-        (n for n in sorted(names, reverse=True) if "lite" not in n), ""
-    )
-    if not model:
+    if env.gemini_model:
+        candidates = [env.gemini_model]
+    else:
+        # Stable text models only, newest version first; preview/image/lite/omni models are
+        # often unavailable on the free tier.
+        skip = ("preview", "image", "lite", "omni", "exp")
+        stable = [n for n in names if not any(w in n for w in skip)]
+        candidates = sorted(stable, key=version_key, reverse=True)[:4]
+    if not candidates:
         print("No Flash model available to test.")
         return 1
 
-    start = time.perf_counter()
-    try:
-        resp = client.models.generate_content(
-            model=model,
-            contents=PROMPT,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": Answer,
-            },
-        )
-    except Exception as exc:  # noqa: BLE001
-        print(f"Model: {model} | call failed: {status_of(exc)}")
+    resp, model, latency_ms = None, "", 0
+    for model in candidates:
+        start = time.perf_counter()
+        try:
+            resp = client.models.generate_content(
+                model=model,
+                contents=PROMPT,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_schema": Answer,
+                },
+            )
+            latency_ms = round((time.perf_counter() - start) * 1000)
+            break
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f"Model: {model} | call failed: {status_of(exc)} (trying the next one)"
+            )
+            resp = None
+    if resp is None:
+        print("Every candidate model refused the call.")
         return 1
-    latency_ms = round((time.perf_counter() - start) * 1000)
     try:
         Answer.model_validate_json(resp.text or "")
         valid = "yes"

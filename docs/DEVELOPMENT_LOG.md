@@ -13,6 +13,8 @@ Newest first. Every new dependency gets a one-line justification here (contract 
 - **Verified:** credentials RL Backend Service Key, RL Webhook Secret, RL SMTP imported from `.env` and stored encrypted; no secret printed, no temp files left.
 - **Dependencies added (C13):** `google-genai` 3.6 (Gemini provider), `openai` 3.57 (OpenAI provider; developer's choice), `pre-commit` (secret scan and lint hooks), Prettier 3.10 (frontend formatting), shadcn/ui CLI and `cn` (shadcn's own class-merge helper, replaces clsx + tailwind-merge).
 - **AI:** developer chose OpenAI for the smoke test. Key verified (HTTP 200 on the free model list, 8 small models). The test call was refused with `credit_balance_exhausted`: the OpenAI account needs prepaid credit. No Gemini key yet.
+- **AI smoke Verified (Gemini, free tier):** key accepted (new `AQ.` format, 53 chars), 12 Flash models listed; `gemini-3.8-flash` and `gemini-3.7-flash` returned 503, `gemini-3.6-flash` returned valid structured JSON in 61 s. The smoke test now skips preview/image/lite models and falls back to the next one.
+- **Fresh clone Verified:** clone → `new-env.ps1` → compose config → backend install and 5 tests → frontend `npm ci`, lint, typecheck, build. It found one bug (typecheck needed `next typegen` on a clean checkout), fixed.
 - **Fixed on the way:** gitleaks hook download reset once (retry worked); PowerShell 5.1 adds a BOM to piped text (stripped in the container); n8n's import error echoes its input, so credential import output is now hidden; a leftover log from the first failed attempt was deleted from the container.
 
 ## 2026-11-21: Phase 1 gate passed
