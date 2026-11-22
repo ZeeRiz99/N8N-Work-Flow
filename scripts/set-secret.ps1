@@ -1,16 +1,20 @@
 <#
 .SYNOPSIS
-  Saves one secret into .env with hidden input. The value is never shown or printed.
+  Saves one secret into .env. The value is never shown or printed.
+.DESCRIPTION
+  Default: reads the key from the clipboard (copy it first), saves it, then clears the clipboard.
+  -Type: asks for it with hidden input instead (some terminals paste only one character there).
 .EXAMPLE
-  .\scripts\set-secret.ps1 OPENAI_API_KEY
+  .\scripts\set-secret.ps1 OPENAI_API_KEY          # copy the key first
   .\scripts\set-secret.ps1 GEMINI_API_KEY
-  .\scripts\set-secret.ps1 TELEGRAM_BOT_TOKEN
+  .\scripts\set-secret.ps1 TELEGRAM_BOT_TOKEN -Type
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0)]
     [ValidateSet('GEMINI_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'TELEGRAM_BOT_TOKEN')]
-    [string]$Name
+    [string]$Name,
+    [switch]$Type
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,19 +25,27 @@ if (-not (Test-Path $envFile)) {
     exit 1
 }
 
-$secure = Read-Host -Prompt "Paste $Name (input is hidden), then press Enter" -AsSecureString
-$bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-try {
-    $value = ([Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)).Trim()
-} finally {
-    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+if ($Type) {
+    $secure = Read-Host -Prompt "Paste $Name (input is hidden), then press Enter" -AsSecureString
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    try {
+        $value = ([Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)).Trim()
+    } finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+    }
+} else {
+    $value = ((Get-Clipboard -Raw) | Out-String).Trim()
 }
 if (-not $value) {
-    Write-Host 'Nothing entered. .env not changed.'
+    Write-Host 'Nothing found. Copy the key first (Ctrl+C), then run this again. .env not changed.'
     exit 1
 }
 if ($value -match '\s') {
-    Write-Host 'The value contains spaces or line breaks, which a key never has. .env not changed.'
+    Write-Host 'The copied text contains spaces or line breaks, which a key never has. .env not changed.'
+    exit 1
+}
+if ($value.Length -lt 20) {
+    Write-Host ("Only {0} characters: that is too short for a real key, so it looks cut off. .env not changed." -f $value.Length)
     exit 1
 }
 
@@ -53,4 +65,5 @@ $enc = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($envFile, (($lines -join "`n") + "`n"), $enc)
 $length = $value.Length
 $value = $null
-Write-Host ("Saved {0} to .env (length {1}). The value was not shown." -f $Name, $length)
+if (-not $Type) { Set-Clipboard -Value ' ' }
+Write-Host ("Saved {0} to .env (length {1}). The value was not shown, and the clipboard was cleared." -f $Name, $length)
