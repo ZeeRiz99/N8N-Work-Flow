@@ -23,14 +23,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\new-env.ps1
 .\scripts\dev.ps1 up
 .\scripts\dev.ps1 status
 
-# 3. Backend
+# 3. Backend: install, migrate, seed the demo organization, test, run
 cd backend
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -e ".[dev]"
+.\.venv\Scripts\alembic upgrade head
+.\.venv\Scripts\python -m app.cli seed-demo
 .\.venv\Scripts\python -m pytest
-.\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
+.\.venv\Scripts\python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-# 4. Frontend (new terminal; on a low-RAM machine stop Docker first if you only need the UI)
+# 4. n8n (once): credentials from .env, then workflows (back in the repo root)
+cd ..
+.\scripts\n8n-credentials.ps1
+.\scripts\import-workflows.ps1 -Activate
+
+# 5. Frontend (new terminal; on a low-RAM machine stop Docker first if you only need the UI)
 cd frontend
 npm ci
 npm run dev
@@ -47,7 +54,8 @@ npm run dev
 Optional checks:
 
 ```powershell
-backend\.venv\Scripts\python scripts\ai_smoke.py     # Gemini key present + one structured call (never prints the key)
+.\scripts\smoke.ps1                                 # end to end: form -> n8n W1 -> score -> alert -> no duplicate on redelivery
+backend\.venv\Scripts\python scripts\ai_smoke.py gemini   # AI key present + one structured call (never prints the key)
 backend\.venv\Scripts\pre-commit install            # secret scan, Ruff, line endings on every commit
 ```
 

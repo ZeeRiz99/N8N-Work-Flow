@@ -25,9 +25,41 @@ class Settings(BaseSettings):
     app_db_name: str = "replyline"
     app_db_user: str = "replyline_app"
     app_db_password: str = Field(default="", repr=False)
-    postgres_host: str = "localhost"
+    # 127.0.0.1, not "localhost": on Windows "localhost" tries IPv6 (::1) first, and Docker
+    # publishes the port on 127.0.0.1 only, so every connection waited for the IPv6 attempt.
+    postgres_host: str = "127.0.0.1"
     postgres_port: int = 5432
     db_connect_timeout_seconds: int = 3
+
+    # URLs
+    cors_origins: str = "http://localhost:3000"
+    frontend_public_url: str = "http://localhost:3000"
+    # Backend -> n8n webhooks (127.0.0.1 for the same IPv6 reason as the database).
+    n8n_webhook_base_url: str = "http://127.0.0.1:5678/webhook/rl"
+    n8n_webhook_secret: str = Field(default="", repr=False)
+    # n8n -> backend: the plain key lives only in .env and the n8n credential; the DB keeps a hash.
+    service_api_key: str = Field(default="", repr=False)
+
+    # Outbox dispatcher
+    outbox_dispatch_enabled: bool = True
+    outbox_poll_seconds: float = 5.0
+    outbox_max_attempts: int = 8
+    outbox_http_timeout_seconds: float = 10.0
+
+    # Public form
+    public_form_rate_limit_per_minute: int = 10
+
+    # Temporary dev access to dashboard reads (P3 only; replaced by real auth in P4).
+    demo_org_slug: str = "harbor-web"
+
+    @property
+    def n8n_webhook_base(self) -> str:
+        """Webhook base with localhost pinned to IPv4 (Docker publishes 127.0.0.1 only)."""
+        return self.n8n_webhook_base_url.rstrip("/").replace("://localhost", "://127.0.0.1")
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
     def sqlalchemy_url(self) -> str:

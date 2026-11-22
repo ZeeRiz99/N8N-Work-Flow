@@ -46,7 +46,7 @@ services:
       N8N_HOST: localhost
       N8N_PORT: 5678
       N8N_PROTOCOL: http
-      WEBHOOK_URL: http://localhost:5678/
+      N8N_WEBHOOK_URL: http://localhost:5678/   # n8n 2.47 deprecates WEBHOOK_URL
       N8N_SECURE_COOKIE: "false"            # plain-HTTP local use only
       GENERIC_TIMEZONE: ${GENERIC_TIMEZONE}
       TZ: ${TZ}
