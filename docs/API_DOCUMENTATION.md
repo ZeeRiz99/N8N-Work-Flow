@@ -9,6 +9,9 @@ Status: Phase 1 skeleton. FastAPI generates the full OpenAPI at `http://localhos
 - Lists: `{items, total, page, page_size}`; filters and sort as query params.
 - Status codes: 201 create, 204 no body, 401, 403, 404, 409 (conflict / already handled), 422, 429.
 - Every request may carry `X-Request-ID`; the response echoes it. Mutating internal calls require `Idempotency-Key`.
+- n8n → backend `/internal/*`: header `X-Service-Key` (n8n credential **RL Backend Service Key**).
+- Backend → n8n webhooks: header `X-Webhook-Secret` (n8n credential **RL Webhook Secret**).
+- Credentials are created from `.env` with `.\scripts\n8n-credentials.ps1`; secrets never appear in workflow JSON.
 
 ## Endpoint groups
 
