@@ -55,6 +55,13 @@ def seed_demo() -> int:
         else:
             print(f"Demo organization '{org.name}' already exists.")
 
+        from app.services.org import provision_defaults, provision_demo_services
+
+        provision_defaults(db, org.id)
+        added = provision_demo_services(db, org.id, org.currency)
+        if added:
+            print(f"Added {added} demo services with price ranges.")
+
         if not settings.service_api_key:
             print("SERVICE_API_KEY is empty in .env; skipped the n8n service key.")
         else:

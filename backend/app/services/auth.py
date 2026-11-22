@@ -135,6 +135,9 @@ def register(
     db.add_all([org, user])
     db.flush()
     db.add(OrganizationMember(organization_id=org.id, user_id=user.id, role="owner"))
+    from app.services.org import provision_defaults
+
+    provision_defaults(db, org.id)
     user.last_login_at = datetime.now(UTC)
     session, _ = _issue(db, settings, user.id, org.id, "owner", uuid.uuid4())
     db.commit()
