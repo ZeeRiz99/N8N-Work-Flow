@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 from app.api.deps import AdminDep, DbSession, UserDep, csrf_protect
 from app.models import LeadSource, Organization, OrganizationMember, PipelineStage, Service, User
 from app.repositories.tenant import get_owned, scoped
+from app.services.activity import audit
 
 router = APIRouter(tags=["organization"], dependencies=[Depends(csrf_protect)])
 _TIMEZONES = available_timezones()
@@ -146,7 +147,18 @@ def change_role(
         raise HTTPException(403, "Only an owner can grant or remove the owner role.")
     if member.role == "owner" and body.role != "owner" and _owners(db, user.organization_id) <= 1:
         raise HTTPException(409, "An organization needs at least one owner.")
+    old_role = member.role
     member.role = body.role
+    audit(
+        db,
+        user.organization_id,
+        user.user_id,
+        "member.role_changed",
+        "member",
+        member.id,
+        from_role=old_role,
+        to_role=body.role,
+    )
     db.commit()
     u = db.get(User, member.user_id)
     return MemberOut(
@@ -166,6 +178,15 @@ def remove_member(member_id: uuid.UUID, user: AdminDep, db: DbSession) -> None:
         raise HTTPException(403, "Only an owner can remove an owner.")
     if member.role == "owner" and _owners(db, user.organization_id) <= 1:
         raise HTTPException(409, "An organization needs at least one owner.")
+    audit(
+        db,
+        user.organization_id,
+        user.user_id,
+        "member.removed",
+        "member",
+        member.id,
+        role=member.role,
+    )
     db.delete(member)
     db.commit()
 

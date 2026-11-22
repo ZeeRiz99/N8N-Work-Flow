@@ -35,7 +35,12 @@ Check 'lead accepted' ([bool]$resp.reference)
 
 $lead = $null
 for ($i = 0; $i -lt 30; $i++) {
-    $lead = (Invoke-RestMethod "$Api/api/v1/leads").items | Where-Object { $_.email -eq $email }
+    # The leads API needs a login since Phase 4, so read the row straight from the database.
+    $row = Sql "select id || '|' || ai_status || '|' || coalesce(score::text,'') || '|' || priority || '|' || coalesce(score_source,'') from leads where email_normalized='$email'"
+    if ($row) {
+        $p = $row -split '\|'
+        $lead = [pscustomobject]@{ id = $p[0]; ai_status = $p[1]; score = $p[2]; priority = $p[3]; score_source = $p[4] }
+    }
     if ($lead -and $lead.ai_status -eq 'done') { break }
     Start-Sleep 1
 }

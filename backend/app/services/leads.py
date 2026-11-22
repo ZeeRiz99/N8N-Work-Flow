@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.core.logging import request_id_var
 from app.models import IdempotencyKey, Lead, LeadInquiry, Organization, OutboxEvent
 from app.schemas.public import PublicLeadIn
+from app.services.activity import record
 from app.services.normalize import normalize_email as _normalize_email
 from app.services.normalize import normalize_phone
 from app.services.org import source_id, stage_id
@@ -152,6 +153,9 @@ def _store(
     )
     db.add(inquiry)
     db.flush()
+    if created:
+        record(db, org.id, lead.id, "lead_created", "system", source="form")
+    record(db, org.id, lead.id, "inquiry_received", "system", channel="form")
 
     db.add(
         IdempotencyKey(
