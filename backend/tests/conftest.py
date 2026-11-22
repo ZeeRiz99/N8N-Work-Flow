@@ -11,15 +11,18 @@ import uuid
 from collections.abc import Iterator
 from pathlib import Path
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session
+# Tests sign their own JWTs; CI has no .env, so give a test-only secret when none is configured.
+os.environ.setdefault("APP_SECRET_KEY", "test-only-secret-not-for-real-use-0123456789abcdef")
 
-from app.core.config import get_settings
-from app.core.security import hash_key
-from app.models import ApiKey, Organization
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import create_engine, text  # noqa: E402
+from sqlalchemy.engine import Engine  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
+
+from app.core.config import get_settings  # noqa: E402
+from app.core.security import hash_key  # noqa: E402
+from app.models import ApiKey, Organization  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -106,11 +109,15 @@ def client(db: Session) -> Iterator[TestClient]:
 
     app = create_app()
     app.dependency_overrides[get_db] = lambda: db
-    yield TestClient(app)  # no lifespan: the outbox worker does not start in tests
+    # No lifespan: the outbox worker does not start in tests. The CSRF header is on by default;
+    # tests that check CSRF override it.
+    yield TestClient(app, headers={"X-Requested-With": "replyline"})
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter() -> None:
-    from app.api.deps import public_form_limiter
+    from app.api.deps import login_limiter, public_form_limiter
 
     public_form_limiter._hits.clear()
+    login_limiter._hits.clear()

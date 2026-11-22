@@ -18,6 +18,11 @@ CODES = {
 }
 
 
+def error_response(status: int, message: str, details=None) -> JSONResponse:
+    """Build the standard error envelope directly (for handlers that must return, not raise)."""
+    return _envelope(status, message, details)
+
+
 def _envelope(status: int, message: str, details=None) -> JSONResponse:
     body = {
         "error": {

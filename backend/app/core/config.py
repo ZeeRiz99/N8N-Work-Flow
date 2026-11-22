@@ -49,6 +49,18 @@ class Settings(BaseSettings):
     # Public form
     public_form_rate_limit_per_minute: int = 10
 
+    # Auth (D7): short-lived access JWT + rotating refresh token, both in httpOnly cookies.
+    app_secret_key: str = Field(default="", repr=False)
+    access_token_ttl_minutes: int = 15
+    refresh_token_ttl_days: int = 14
+    login_rate_limit_per_minute: int = 5
+    # Self-service sign-up creates a new organization; on in development, off in production.
+    allow_registration: bool = True
+
+    @property
+    def cookie_secure(self) -> bool:
+        return self.app_env != "development"
+
     # Temporary dev access to dashboard reads (P3 only; replaced by real auth in P4).
     demo_org_slug: str = "harbor-web"
 

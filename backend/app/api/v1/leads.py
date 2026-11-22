@@ -1,9 +1,9 @@
-"""Dashboard reads (P3: temporary dev access, demo org only; real auth arrives in P4)."""
+"""Dashboard reads for logged-in members of an organization."""
 
 from fastapi import APIRouter, Query
 from sqlalchemy import func, select
 
-from app.api.deps import DbSession, DevOrg
+from app.api.deps import DbSession, UserDep
 from app.models import Lead, LeadInquiry, WorkflowExecution
 
 router = APIRouter(tags=["leads"])
@@ -11,12 +11,14 @@ router = APIRouter(tags=["leads"])
 
 @router.get("/leads")
 def list_leads(
-    org: DevOrg,
+    user: UserDep,
     db: DbSession,
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
 ) -> dict:
-    total = db.scalar(select(func.count()).select_from(Lead).where(Lead.organization_id == org.id))
+    total = db.scalar(
+        select(func.count()).select_from(Lead).where(Lead.organization_id == user.organization_id)
+    )
     latest_msg = (
         select(LeadInquiry.message)
         .where(LeadInquiry.lead_id == Lead.id)
@@ -30,7 +32,7 @@ def list_leads(
     )
     rows = db.execute(
         select(Lead, latest_msg.label("latest_message"), inquiry_count.label("inquiries"))
-        .where(Lead.organization_id == org.id, Lead.archived_at.is_(None))
+        .where(Lead.organization_id == user.organization_id, Lead.archived_at.is_(None))
         .order_by(Lead.last_interaction_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
@@ -56,10 +58,10 @@ def list_leads(
 
 
 @router.get("/automation/executions")
-def list_executions(org: DevOrg, db: DbSession, limit: int = Query(20, ge=1, le=100)) -> dict:
+def list_executions(user: UserDep, db: DbSession, limit: int = Query(20, ge=1, le=100)) -> dict:
     rows = db.scalars(
         select(WorkflowExecution)
-        .where(WorkflowExecution.organization_id == org.id)
+        .where(WorkflowExecution.organization_id == user.organization_id)
         .order_by(WorkflowExecution.created_at.desc())
         .limit(limit)
     ).all()

@@ -1,6 +1,7 @@
 """Small admin commands.
 
-.venv\\Scripts\\python -m app.cli seed-demo     # demo organization + n8n service key (idempotent)
+.venv\\Scripts\\python -m app.cli seed-demo       # demo org + n8n service key (idempotent)
+.venv\\Scripts\\python -m app.cli set-demo-owner  # your own owner login (asks; password hidden)
 """
 
 import sys
@@ -77,7 +78,57 @@ def seed_demo() -> int:
     return 0
 
 
-COMMANDS = {"seed-demo": seed_demo}
+def set_demo_owner() -> int:
+    """Create or update YOUR owner login for the demo organization. Asks interactively; the
+    password is typed hidden and stored only as an argon2id hash."""
+    import getpass
+
+    from app.models import OrganizationMember, User
+    from app.schemas.public import EMAIL_RE
+    from app.services.auth import hash_password, password_problems
+
+    settings = get_settings()
+    email = input("Your email for logging in: ").strip()
+    if not EMAIL_RE.match(email):
+        print("That does not look like an email address. Nothing changed.")
+        return 1
+    name = input("Your name: ").strip() or email.split("@")[0]
+    password = getpass.getpass("Choose a password (hidden): ")
+    problems = password_problems(password)
+    if problems:
+        print("Password not accepted: " + " ".join(problems))
+        return 1
+    if getpass.getpass("Type it again (hidden): ") != password:
+        print("The two passwords differ. Nothing changed.")
+        return 1
+
+    with get_session_factory()() as db:
+        org = db.scalar(select(Organization).where(Organization.slug == settings.demo_org_slug))
+        if org is None:
+            print("Run seed-demo first.")
+            return 1
+        user = db.scalar(select(User).where(User.email == email))
+        if user is None:
+            user = User(email=email, full_name=name)
+            db.add(user)
+        user.password_hash = hash_password(password)
+        user.full_name = name
+        db.flush()
+        member = db.scalar(
+            select(OrganizationMember).where(
+                OrganizationMember.organization_id == org.id, OrganizationMember.user_id == user.id
+            )
+        )
+        if member is None:
+            db.add(OrganizationMember(organization_id=org.id, user_id=user.id, role="owner"))
+        else:
+            member.role = "owner"
+        db.commit()
+    print(f"Done. Log in at {settings.frontend_public_url.rstrip('/')}/login as {email}.")
+    return 0
+
+
+COMMANDS = {"seed-demo": seed_demo, "set-demo-owner": set_demo_owner}
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
