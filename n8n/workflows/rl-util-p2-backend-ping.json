@@ -1,0 +1,37 @@
+{
+  "id": "rlP2BackendPing1",
+  "name": "RL | Util | P2 backend ping (throwaway)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "6b0c7a52-4b1d-4a0e-9f41-1a2b3c4d5e01",
+      "name": "Run by hand",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8000/health",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Request-ID", "value": "p2-n8n-workflow-check" }]
+        },
+        "options": { "timeout": 5000 }
+      },
+      "id": "6b0c7a52-4b1d-4a0e-9f41-1a2b3c4d5e02",
+      "name": "GET backend /health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0]
+    }
+  ],
+  "connections": {
+    "Run by hand": {
+      "main": [[{ "node": "GET backend /health", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
