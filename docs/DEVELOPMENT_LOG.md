@@ -2,6 +2,14 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-22: Phase 2 gate passed
+
+- GitHub: private repo `ZeeRiz99/N8N-Work-Flow` created; `main` and `phase/02-foundation` pushed; PR #1 opened.
+- CI green on GitHub: backend (24 s), frontend (40 s), secret scan of the full history (8 s, no leaks).
+- **Deviation:** the gitleaks GitHub Action failed on the pull request without a finding; CI now runs the gitleaks CLI v8.30.0 directly. Actions moved to their Node 24 versions.
+- Gate items Verified: infra starts from the spaced path; `/ready` green; frontend loads; n8n workflow reaches the backend; AI smoke (Gemini) OK; CI green; secret scan clean; fresh clone works. **Deferred:** Telegram test message (ADR 005; email fallback Verified).
+- n8n owner account created by the developer.
+
 ## 2026-11-22: Phase 2 (foundation) progress
 
 - **Installed:** Docker Desktop 4.99.0 (engine 29.9.3) via winget. WSL capped at 3 GB (`.wslconfig.bak` kept). Disk image left on C: (backlog #12).

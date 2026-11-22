@@ -12,7 +12,7 @@ Rhythm: 1 phase = 1 branch = 1 pull request = 1 verified increment. Details per 
   - [x] Architecture, draft schema, API skeleton, security stub
   - [x] Draft `CLAUDE.md` and `.claude/settings.json` (`docs/drafts/`)
   - [x] Developer approval: (a) installation plan, (b) architecture and decisions, (c) draft schema (2026-11-21, "ok to go")
-- [ ] **P2 Foundation and repeatable environment**: Docker, compose, backend and frontend skeletons, CI, `.env`
+- [x] **P2 Foundation and repeatable environment**: Docker, compose, backend and frontend skeletons, CI, `.env` (PR #1, 2026-11-22; Telegram deferred to P3 per ADR 005)
 - [ ] **P3 Walking skeleton**: form → backend → n8n → backend → alert → dashboard row (fake AI)
 
 ## M1 Working MVP
