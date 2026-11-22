@@ -2,6 +2,18 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-22: Phase 3 (walking skeleton)
+
+- **Schema:** first Alembic migration with the 8 P3 tables (all tenant tables carry `organization_id`); up, down and up again Verified. A separate `replyline_test` database for integration tests.
+- **Fixed:** every database connection waited for an IPv6 attempt because `localhost` resolves to `::1` first on Windows while Docker publishes on 127.0.0.1 only; Alembic went from minutes to 3.2 s after switching to 127.0.0.1. The same fix applies to backend → n8n webhooks.
+- **Backend:** public intake (form key, honeypot, per-IP rate limit, normalized email, dedupe as a new inquiry, idempotency key, outbox row in the same transaction); outbox dispatcher (SKIP LOCKED, backoff 15 s doubling to 10 min, max 8 attempts, redispatch); internal API behind a hashed service key; FakeAIProvider (labelled "fake"); delivery-once claims on `Idempotency-Key`.
+- **n8n:** W1 Lead Intake imported from JSON with placeholders filled from `.env` and activated by `scripts/import-workflows.ps1`. Webhook refuses calls without `X-Webhook-Secret` (403 Verified).
+- **Frontend:** `/leads` (real rows, polls while AI works, loading / empty / error states) and `/f/[slug]` (public form inside `Suspense`, as Next.js 16 requires for `useParams` with Cache Components).
+- **Gate Verified:** form → lead row → n8n execution → fake score 95 (high) → Mailpit alert → `workflow_executions` row with the caller's request id, in 1.2 s. Same event delivered twice → one alert, repeat logged as `skipped`, still one lead and one inquiry. n8n stopped and backend killed mid-delivery → event delivered 41 s after restart, nothing lost. `scripts/smoke.ps1` repeats the checks (8 of 8 pass).
+- **Tests:** 21 backend tests pass against the real test database (intake, dedupe, idempotency, honeypot, validation envelope, rate limit, service-key auth, cross-org 404, fake analysis, run upsert, outbox delivery, retry, failure, backoff).
+- **Dependencies added (C13):** `httpx` moved to runtime (outbox HTTP client).
+- **Deviation:** W1 does the alert and logging inline instead of calling W0/W3 sub-workflows (backlog #16). Telegram still pending the bot (backlog #17).
+
 ## 2026-11-22: Phase 2 gate passed
 
 - GitHub: private repo `ZeeRiz99/N8N-Work-Flow` created; `main` and `phase/02-foundation` pushed; PR #1 opened.
