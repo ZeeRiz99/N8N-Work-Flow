@@ -51,5 +51,6 @@ if (-not $found) { $lines.Add("$Name=$value") }
 
 $enc = New-Object System.Text.UTF8Encoding($false)
 [System.IO.File]::WriteAllText($envFile, (($lines -join "`n") + "`n"), $enc)
+$length = $value.Length
 $value = $null
-Write-Host ("Saved {0} to .env (length {1}). The value was not shown." -f $Name, $lines.Where({ $_ -like "$Name=*" })[0].Length - $Name.Length - 1)
+Write-Host ("Saved {0} to .env (length {1}). The value was not shown." -f $Name, $length)
