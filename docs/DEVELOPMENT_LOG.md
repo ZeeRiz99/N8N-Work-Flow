@@ -2,6 +2,19 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-22: Phase 2 (foundation) progress
+
+- **Installed:** Docker Desktop 4.99.0 (engine 29.9.3) via winget. WSL capped at 3 GB (`.wslconfig.bak` kept). Disk image left on C: (backlog #12).
+- **Images (pinned):** `postgres:18.7`, `n8nio/n8n:2.47.4`, `axllent/mailpit:v1.34.0`; 2.69 GB on disk. Runner image only behind the `code-nodes` profile.
+- **Measured RAM:** n8n 383 MB, PostgreSQL 154 MB, Mailpit 27 MB (about 565 MB for the stack).
+- **Verified:** two databases and roles; each role is refused on the other database; `citext` and `pg_trgm` present; n8n created 178 tables in its own database.
+- **Verified:** backend `/ready` = 200 with `database: ok`; from inside the n8n container `host.docker.internal:8000/health` = 200 with the request id echoed; an imported n8n workflow (`RL | Util | P2 backend ping`) ran with status `success`.
+- **Verified:** SMTP to Mailpit delivered; n8n reaches `mailpit:1025`.
+- **Verified:** credentials RL Backend Service Key, RL Webhook Secret, RL SMTP imported from `.env` and stored encrypted; no secret printed, no temp files left.
+- **Dependencies added (C13):** `google-genai` 3.6 (Gemini provider), `openai` 3.57 (OpenAI provider; developer's choice), `pre-commit` (secret scan and lint hooks), Prettier 3.10 (frontend formatting), shadcn/ui CLI and `cn` (shadcn's own class-merge helper, replaces clsx + tailwind-merge).
+- **AI:** developer chose OpenAI for the smoke test. Key verified (HTTP 200 on the free model list, 8 small models). The test call was refused with `credit_balance_exhausted`: the OpenAI account needs prepaid credit. No Gemini key yet.
+- **Fixed on the way:** gitleaks hook download reset once (retry worked); PowerShell 5.1 adds a BOM to piped text (stripped in the container); n8n's import error echoes its input, so credential import output is now hidden; a leftover log from the first failed attempt was deleted from the container.
+
 ## 2026-11-21: Phase 1 gate passed
 
 - Developer approved the installation plan, the architecture and ADRs 001–010, and the draft schema ("ok to go").
