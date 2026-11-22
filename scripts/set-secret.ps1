@@ -34,6 +34,9 @@ if ($Type) {
         [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
     }
 } else {
+    Write-Host ''
+    Write-Host "Now go to your browser and copy the $Name (select it, Ctrl+C)."
+    $null = Read-Host 'Then come back here and press Enter'
     $value = ((Get-Clipboard -Raw) | Out-String).Trim()
 }
 if (-not $value) {
