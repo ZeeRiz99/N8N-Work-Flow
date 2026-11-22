@@ -5,9 +5,9 @@ The backend decides; n8n only sequences and delivers (D10).
 
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -16,6 +16,7 @@ from app.api.deps import DbSession, ServiceOrg
 from app.core.config import get_settings
 from app.models import Lead, LeadInquiry, WorkflowExecution
 from app.services.analysis import analyze_lead
+from app.services.idempotency import claim_once
 from app.services.outbox import redispatch_failed
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -27,10 +28,18 @@ def internal_health(org: ServiceOrg) -> dict:
 
 
 @router.post("/leads/{lead_id}/analyze")
-def analyze(lead_id: uuid.UUID, org: ServiceOrg, db: DbSession) -> dict:
+def analyze(
+    lead_id: uuid.UUID,
+    org: ServiceOrg,
+    db: DbSession,
+    idempotency_key: Annotated[str | None, Header()] = None,
+) -> dict:
+    """Analyze once per event. A redelivered event gets the stored result and
+    first_delivery=false, so W1 does not alert or draft a second time."""
     result = analyze_lead(db, org.id, lead_id)
     if result is None:
         raise HTTPException(404, "Lead not found.")
+    result["first_delivery"] = claim_once(db, org.id, "n8n:analyze", idempotency_key, result)
     return result
 
 
