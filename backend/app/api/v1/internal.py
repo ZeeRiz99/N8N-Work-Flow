@@ -115,3 +115,78 @@ def outbox_redispatch(request: Request, org: ServiceOrg, db: DbSession) -> dict:
     if worker is not None:
         worker.nudge()
     return {"requeued": count}
+
+
+# ---------------------------------------------------------------- drafts (W4, W4b)
+
+
+@router.post("/leads/{lead_id}/drafts/generate")
+def internal_generate_draft(
+    lead_id: uuid.UUID,
+    org: ServiceOrg,
+    db: DbSession,
+    idempotency_key: Annotated[str | None, Header()] = None,
+) -> dict:
+    """W4: write a first-reply draft into the Approvals queue. A redelivered event gets
+    first_delivery=false and no second draft."""
+    from app.services import approvals, drafting
+
+    lead = db.scalar(select(Lead).where(Lead.id == lead_id, Lead.organization_id == org.id))
+    if lead is None:
+        raise HTTPException(404, "Lead not found.")
+    if not claim_once(db, org.id, "n8n:draft", idempotency_key, {"lead_id": str(lead_id)}):
+        db.commit()
+        return {"first_delivery": False, "skipped": "already handled"}
+    if lead.do_not_contact or not lead.email:
+        db.commit()
+        return {"first_delivery": True, "skipped": "lead cannot be contacted"}
+    style = (org.settings or {}).get("ai", {}).get("default_style", "professional")
+    try:
+        d = drafting.generate_draft(db, org.id, lead.id, style)
+    except drafting.DraftRefused as exc:
+        db.commit()
+        return {"first_delivery": True, "skipped": str(exc)}
+    row = approvals.save_generated(db, org.id, lead, d, None)
+    db.commit()
+    return {"first_delivery": True, "draft_id": str(row.id), "all_passed": d["all_passed"]}
+
+
+class MarkSentIn(BaseModel):
+    provider_message_id: str | None = Field(default=None, max_length=200)
+
+
+class MarkFailedIn(BaseModel):
+    error: str = Field(min_length=1, max_length=300)
+
+
+@router.post("/drafts/{draft_id}/claim-send")
+def claim_send(draft_id: uuid.UUID, org: ServiceOrg, db: DbSession) -> dict:
+    """W4b: the only way to get a draft for sending. 409 = not approved or already claimed."""
+    from app.services import approvals
+
+    d = approvals.claim_send(db, org.id, draft_id)
+    if d is None:
+        raise HTTPException(409, "Draft is not approved or is already being sent.")
+    return {"draft_id": str(d.id), "to": d.to_address, "subject": d.subject, "body": d.body}
+
+
+@router.post("/drafts/{draft_id}/mark-sent")
+def mark_sent(draft_id: uuid.UUID, body: MarkSentIn, org: ServiceOrg, db: DbSession) -> dict:
+    from app.services import approvals
+
+    try:
+        d = approvals.mark_sent(db, org.id, draft_id, body.provider_message_id)
+    except approvals.DraftStateError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {"draft_id": str(d.id), "status": d.status}
+
+
+@router.post("/drafts/{draft_id}/mark-failed")
+def mark_failed(draft_id: uuid.UUID, body: MarkFailedIn, org: ServiceOrg, db: DbSession) -> dict:
+    from app.services import approvals
+
+    try:
+        d = approvals.mark_failed(db, org.id, draft_id, body.error)
+    except approvals.DraftStateError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {"draft_id": str(d.id), "status": d.status}
