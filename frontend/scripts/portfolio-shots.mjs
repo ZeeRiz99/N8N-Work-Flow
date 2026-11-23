@@ -15,7 +15,10 @@ const password = readFileSync(pwFile, "utf-8").trim();
 mkdirSync(outDir, { recursive: true });
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+const page = await browser.newPage({
+  viewport: { width: 1440, height: 900 },
+  deviceScaleFactor: 2,
+});
 const shot = async (name, opts = {}) => {
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(400);
@@ -29,7 +32,11 @@ await page.getByLabel("Email").fill("alex.morgan@example.com");
 await page.getByLabel("Password").fill(password);
 await page.getByRole("button", { name: /log in|sign in/i }).click();
 await page.waitForURL(/\/leads$/);
-await page.getByRole("button", { name: "Dismiss" }).first().click({ timeout: 1000 }).catch(() => {});
+await page
+  .getByRole("button", { name: "Dismiss" })
+  .first()
+  .click({ timeout: 1000 })
+  .catch(() => {});
 await page.locator("#f-sort").filter({ visible: true }).selectOption("score");
 await shot("01-leads-sorted-by-ai-score");
 
