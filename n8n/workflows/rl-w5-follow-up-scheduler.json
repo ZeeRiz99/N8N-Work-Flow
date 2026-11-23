@@ -1,0 +1,286 @@
+{
+  "id": "rlW5FollowUps001",
+  "name": "RL | W5 | Follow-Up Scheduler",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## RL | W5 | Follow-Up Scheduler\n**Trigger:** every hour.\n**Does:** asks the backend for follow-ups that are due (only organizations inside their own business hours) -> for each, the backend checks the contact rules and skips with a reason or writes a draft for approval -> emails the team when drafts are waiting.\n**Never sends.**",
+        "height": 280,
+        "width": 440
+      },
+      "id": "rlW5FollowUps001n",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "f5f50000-0000-4000-8000-000000000001",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=__BACKEND_URL__/api/v1/internal/follow-ups/due",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f5f50000-0000-4000-8000-000000000002",
+      "name": "Due follow-ups (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "id": "f5f50000-0000-4000-8000-000000000003",
+      "name": "Each follow-up",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/follow-ups/{{ $json.id }}/prepare",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "f5f50000-0000-4000-8000-000000000004",
+      "name": "Prepare (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "f5f50000-0000-4000-8000-000000000005c",
+              "leftValue": "={{ $json.status }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "awaiting_approval"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f5f50000-0000-4000-8000-000000000005",
+      "name": "Draft waiting?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "__ALERT_EMAIL_FROM__",
+        "toEmail": "__ALERT_EMAIL_TO__",
+        "subject": "Replyline: follow-up drafts are waiting for approval",
+        "emailFormat": "text",
+        "text": "={{ 'Follow-up drafts are ready in Approvals. Nothing is sent until you approve them.\\n' + '__FRONTEND_URL__/approvals' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "f5f50000-0000-4000-8000-000000000006",
+      "name": "Email the team",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1200,
+        -100
+      ],
+      "webhookId": "f5f50000-0000-4000-8000-000000000006",
+      "credentials": {
+        "smtp": {
+          "id": "rlCredSmtp000001",
+          "name": "RL SMTP"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/workflow-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow_key: 'W5', n8n_execution_id: String($execution.id), status: 'success', meta: { prepared: $('Prepare (backend)').all().length } }) }}"
+      },
+      "id": "f5f50000-0000-4000-8000-000000000007",
+      "name": "Log run (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      },
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Due follow-ups (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Due follow-ups (backend)": {
+      "main": [
+        [
+          {
+            "node": "Each follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Each follow-up": {
+      "main": [
+        [
+          {
+            "node": "Prepare (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare (backend)": {
+      "main": [
+        [
+          {
+            "node": "Draft waiting?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft waiting?": {
+      "main": [
+        [
+          {
+            "node": "Email the team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the team": {
+      "main": [
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "rlW9ErrorMon0001"
+  },
+  "tags": [],
+  "pinData": {}
+}

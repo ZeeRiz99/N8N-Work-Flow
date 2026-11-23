@@ -387,6 +387,20 @@ def recovery_suggestion(db: Session, lead: Lead, now: datetime | None = None) ->
 
     if not allowed(contact_check(db, lead, now, ignore_cooldown=True)):
         return {"skipped": "lead cannot be contacted"}
+    # Idempotent: a retried call returns the open recovery draft instead of writing another.
+    existing = db.scalar(
+        select(CommunicationDraft).where(
+            CommunicationDraft.lead_id == lead.id,
+            CommunicationDraft.kind == "recovery",
+            CommunicationDraft.status == "pending_approval",
+        )
+    )
+    if existing is not None:
+        return {
+            "draft_id": str(existing.id),
+            "reason": recovery_reason(db, lead, now),
+            "already": True,
+        }
     org = db.get(Organization, lead.organization_id)
     style = (org.settings or {}).get("ai", {}).get("default_style", "professional")
     try:

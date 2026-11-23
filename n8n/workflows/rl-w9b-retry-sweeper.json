@@ -1,0 +1,172 @@
+{
+  "id": "rlW9bSweeper0001",
+  "name": "RL | W9b | Retry Sweeper",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## RL | W9b | Retry Sweeper\n**Trigger:** every 10 minutes.\n**Does:** requeues and delivers stalled outbox events, re-sends leads stuck by a crash, retries failed AI analyses (capped, idempotent).",
+        "height": 280,
+        "width": 440
+      },
+      "id": "rlW9bSweeper0001n",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "id": "f9b90000-0000-4000-8000-000000000001",
+      "name": "Every 10 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/outbox/redispatch",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f9b90000-0000-4000-8000-000000000002",
+      "name": "Redispatch outbox (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/leads/retry-ai",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "f9b90000-0000-4000-8000-000000000003",
+      "name": "Retry AI (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/workflow-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow_key: 'W9b', n8n_execution_id: String($execution.id), status: 'success', meta: { requeued: $('Redispatch outbox (backend)').item.json.requeued, dispatched: $('Redispatch outbox (backend)').item.json.dispatched, stuck: $json.requeued_stuck, recovered: $json.recovered } }) }}"
+      },
+      "id": "f9b90000-0000-4000-8000-000000000004",
+      "name": "Log run (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      },
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Every 10 minutes": {
+      "main": [
+        [
+          {
+            "node": "Redispatch outbox (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redispatch outbox (backend)": {
+      "main": [
+        [
+          {
+            "node": "Retry AI (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry AI (backend)": {
+      "main": [
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "rlW9ErrorMon0001"
+  },
+  "tags": [],
+  "pinData": {}
+}

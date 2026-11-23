@@ -243,3 +243,31 @@ def test_mark_replied_endpoint_and_contact_rules(client, db, owner):  # noqa: F8
     assert rules["allowed"] is False
     assert any(c["key"] == "not_replied" and not c["ok"] for c in rules["checks"])
     assert db.get(CommunicationDraft, uuid.UUID(d["id"])).status == "cancelled"
+
+
+def test_recovery_is_idempotent_and_reasons_come_from_records(client, db, owner):  # noqa: F811
+    lead = _lead(db, new_lead(client, message=MSG))
+    lead.last_interaction_at = datetime.now(UTC) - timedelta(days=20)
+    db.flush()
+    assert [x.id for x in followups.recovery_candidates(db, lead.organization_id)] == [lead.id]
+    first = followups.recovery_suggestion(db, lead)
+    again = followups.recovery_suggestion(db, lead)
+    assert first["draft_id"] == again["draft_id"] and again["already"] is True
+    assert "No activity for 20 days" in first["reason"] and "reason unknown" in first["reason"]
+    assert followups.recovery_candidates(db, lead.organization_id) == []  # recovered recently
+
+
+def test_budget_lock_survives_a_release_race(tmp_path, monkeypatch):
+    import threading
+
+    from app.ai import budget
+
+    monkeypatch.setattr(budget, "USAGE_FILE", tmp_path / "usage.json")
+    monkeypatch.setattr(budget, "_LOCK", tmp_path / "usage.lock")
+    results = []
+    threads = [threading.Thread(target=lambda: results.append(budget.take(100))) for _ in range(40)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert results.count(True) == 40 and budget.used() == 40

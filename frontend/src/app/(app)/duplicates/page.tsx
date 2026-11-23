@@ -5,13 +5,19 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useSession } from "@/components/session";
 import { buttonPrimary, buttonSecondary, card } from "@/components/ui-tokens";
-import { api, type DuplicatePair, errorText } from "@/lib/api";
+import { api, type DuplicatePair, errorText, type MergePreview } from "@/lib/api";
 
 export default function DuplicatesPage() {
   const me = useSession();
   const [pairs, setPairs] = useState<DuplicatePair[] | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<{
+    pairId: string;
+    keepId: string;
+    name: string;
+    data: MergePreview;
+  } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -119,15 +125,73 @@ export default function DuplicatesPage() {
                   type="button"
                   disabled={busy}
                   className={`${buttonPrimary} mt-2`}
-                  onClick={() =>
-                    run(() => api.mergeDuplicate(pair.id, l.id), `Merged into ${l.full_name}.`)
-                  }
+                  aria-expanded={preview?.pairId === pair.id && preview.keepId === l.id}
+                  onClick={async () => {
+                    try {
+                      const data = await api.mergePreview(pair.id, l.id);
+                      setPreview({ pairId: pair.id, keepId: l.id, name: l.full_name, data });
+                    } catch (e) {
+                      setMessage(errorText(e));
+                    }
+                  }}
                 >
-                  Keep this one
+                  Keep this one…
                 </button>
               </article>
             ))}
           </div>
+          {preview?.pairId === pair.id && (
+            <div className="rounded-lg border border-[#E3E6EF] p-4" aria-label="Merge preview">
+              <h3 className="mb-2 font-semibold">Merge preview: keep {preview.name}</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-[#5A6075]">
+                    <th className="py-1 font-semibold">Field</th>
+                    <th className="py-1 font-semibold">Result</th>
+                    <th className="py-1 font-semibold">From</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.data.fields.map((f) => (
+                    <tr key={f.field} className="border-t border-[#EEF0F6]">
+                      <td className="py-1.5 capitalize">
+                        {f.field.replace("_raw", "").replace("_", " ")}
+                      </td>
+                      <td className="py-1.5">{f.result ?? "—"}</td>
+                      <td className="py-1.5 text-[#5A6075]">
+                        {f.source === "other" ? "filled from the other lead" : "kept"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-2 text-sm text-[#3A4057]">
+                Moves over: {preview.data.moves.messages} message(s), {preview.data.moves.notes}{" "}
+                note(s), {preview.data.moves.timeline_entries} timeline entries. The other lead is
+                archived (not deleted) and the merge is written to the audit log.
+                {preview.data.do_not_contact ? " Do not contact stays on." : ""}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  className={buttonPrimary}
+                  onClick={async () => {
+                    await run(
+                      () => api.mergeDuplicate(pair.id, preview.keepId),
+                      `Merged into ${preview.name}.`,
+                    );
+                    setPreview(null);
+                  }}
+                >
+                  Confirm merge
+                </button>
+                <button type="button" className={buttonSecondary} onClick={() => setPreview(null)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           <div>
             <button
               type="button"
