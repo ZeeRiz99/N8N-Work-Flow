@@ -546,3 +546,65 @@ class AIRetryWorker:
                         log.info("ai_retry recovered=%s requeued_stuck=%s", n, stuck)
             except Exception:  # noqa: BLE001 - never let the worker die
                 log.exception("ai retry loop error")
+
+
+def preview_scores(
+    db: Session, org_id: uuid.UUID, weights: dict, thresholds: dict, limit: int = 20
+) -> list[dict]:
+    """How recent leads would score with proposed settings, from their stored analyses.
+    Nothing is saved and no AI call is made."""
+    from app.scoring.engine import validate_config
+
+    validate_config(weights, thresholds)
+    org = db.get(Organization, org_id)
+    catalog = _catalog(db, org_id)
+    cfg = active_config(db, org_id)
+    leads = db.scalars(
+        select(Lead)
+        .where(Lead.organization_id == org_id, Lead.archived_at.is_(None), Lead.score.is_not(None))
+        .order_by(Lead.last_interaction_at.desc())
+        .limit(limit)
+    ).all()
+    out = []
+    for lead in leads:
+        a, _ = latest(db, lead.id)
+        if a is None or a.status == "skipped":
+            continue
+        inquiry = db.scalar(
+            select(LeadInquiry)
+            .where(LeadInquiry.lead_id == lead.id)
+            .order_by(LeadInquiry.received_at.desc())
+            .limit(1)
+        )
+        form = (inquiry.form_fields if inquiry else {}) or {}
+        prep = prepare(inquiry.message if inquiry else "", form, catalog, org.name)
+        output = (
+            AnalysisOutput.model_validate(
+                {"extraction": a.extracted.get("raw", {}), "assessment": a.assessment}
+            )
+            if a.status == "done"
+            else None
+        )
+        facts = LeadFacts(lead.full_name, lead.email, lead.phone_raw, lead.company, 1)
+        res = assess(
+            output,
+            prep,
+            form,
+            catalog,
+            org.currency or "USD",
+            facts,
+            weights,
+            thresholds,
+            cfg.ideal_customer,
+        ).result
+        out.append(
+            {
+                "lead_id": str(lead.id),
+                "name": lead.full_name,
+                "old_score": lead.score,
+                "old_band": lead.priority,
+                "new_score": res.total,
+                "new_band": res.band,
+            }
+        )
+    return out

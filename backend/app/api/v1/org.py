@@ -388,3 +388,179 @@ def edit_service(
         setattr(svc, key, value)
     db.commit()
     return _service_out(svc)
+
+
+# ---------------------------------------------------------------- invitations (P9)
+
+
+class InviteIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: str = Field(min_length=3, max_length=320)
+    role: str = Field(default="member")
+
+    @field_validator("email")
+    @classmethod
+    def email_shape(cls, v: str) -> str:
+        from app.schemas.public import EMAIL_RE
+
+        if not EMAIL_RE.match(v.strip()):
+            raise ValueError("Enter a valid email address.")
+        return v.strip()
+
+
+def _invite_out(inv) -> dict:
+    return {
+        "id": str(inv.id),
+        "email": inv.email,
+        "role": inv.role,
+        "expires_at": inv.expires_at.isoformat(),
+        "created_at": inv.created_at.isoformat(),
+    }
+
+
+@router.post("/org/invitations", status_code=201)
+def invite(body: InviteIn, user: AdminDep, db: DbSession) -> dict:
+    from app.services import invitations
+
+    org = db.get(Organization, user.organization_id)
+    try:
+        inv, token = invitations.create(db, org, body.email, body.role, user.user_id)
+    except invitations.InviteError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    db.commit()
+    emailed = invitations.send_email(org, inv.email, token)
+    # The link is returned once so it can be copied; only its hash is stored.
+    return {**_invite_out(inv), "link": invitations.link(token), "emailed": emailed}
+
+
+@router.get("/org/invitations")
+def list_invitations(user: AdminDep, db: DbSession) -> list[dict]:
+    from app.models import Invitation
+
+    rows = db.scalars(
+        select(Invitation)
+        .where(
+            Invitation.organization_id == user.organization_id,
+            Invitation.accepted_at.is_(None),
+            Invitation.revoked_at.is_(None),
+            Invitation.expires_at > func.now(),
+        )
+        .order_by(Invitation.created_at.desc())
+    ).all()
+    return [_invite_out(i) for i in rows]
+
+
+@router.delete("/org/invitations/{invitation_id}", status_code=204)
+def revoke_invitation(invitation_id: uuid.UUID, user: AdminDep, db: DbSession) -> None:
+    from app.models import Invitation
+
+    inv = get_owned(db, Invitation, invitation_id, user.organization_id)
+    if inv.accepted_at is None and inv.revoked_at is None:
+        inv.revoked_at = func.now()
+        audit(
+            db,
+            user.organization_id,
+            user.user_id,
+            "member.invite_revoked",
+            "invitation",
+            inv.id,
+            email=inv.email,
+        )
+        db.commit()
+
+
+# ---------------------------------------------------------------- notifications, retention
+
+
+class NotificationsIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    alert_on_high: bool = True
+    daily_report: bool = True
+    weekly_report: bool = True
+    alert_email: str | None = Field(default=None, max_length=320)
+
+
+@router.get("/settings/notifications")
+def get_notifications(user: UserDep, db: DbSession) -> dict:
+    org = db.get(Organization, user.organization_id)
+    return {**NotificationsIn().model_dump(), **(org.settings or {}).get("notifications", {})}
+
+
+@router.put("/settings/notifications")
+def put_notifications(body: NotificationsIn, user: AdminDep, db: DbSession) -> dict:
+    org = db.get(Organization, user.organization_id)
+    settings = dict(org.settings or {})
+    settings["notifications"] = body.model_dump()
+    org.settings = settings
+    db.commit()
+    return settings["notifications"]
+
+
+class RetentionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    erase_archived_after_days: int | None = Field(default=None, ge=30, le=3650)
+
+
+@router.get("/settings/retention")
+def get_retention(user: UserDep, db: DbSession) -> dict:
+    org = db.get(Organization, user.organization_id)
+    from app.models import Lead
+
+    days = (org.settings or {}).get("retention", {}).get("erase_archived_after_days")
+    due = 0
+    if days:
+        due = (
+            db.scalar(
+                select(func.count())
+                .select_from(Lead)
+                .where(
+                    Lead.organization_id == org.id,
+                    Lead.archived_at.is_not(None),
+                    Lead.archived_at < func.now() - func.make_interval(0, 0, 0, days),
+                )
+            )
+            or 0
+        )
+    return {"erase_archived_after_days": days, "due_for_erasure": due}
+
+
+@router.put("/settings/retention")
+def put_retention(body: RetentionIn, user: AdminDep, db: DbSession) -> dict:
+    org = db.get(Organization, user.organization_id)
+    settings = dict(org.settings or {})
+    settings["retention"] = body.model_dump()
+    org.settings = settings
+    audit(
+        db,
+        org.id,
+        user.user_id,
+        "settings.retention",
+        "organization",
+        org.id,
+        days=body.erase_archived_after_days,
+    )
+    db.commit()
+    return get_retention(user, db)
+
+
+@router.post("/settings/retention/purge")
+def purge_archived(user: AdminDep, db: DbSession) -> dict:
+    """Erase archived leads older than the retention period (with an anonymous audit row)."""
+    from app.models import Lead
+    from app.services import crm
+
+    org = db.get(Organization, user.organization_id)
+    days = (org.settings or {}).get("retention", {}).get("erase_archived_after_days")
+    if not days:
+        raise HTTPException(409, "Set a retention period first.")
+    leads = db.scalars(
+        select(Lead).where(
+            Lead.organization_id == org.id,
+            Lead.archived_at.is_not(None),
+            Lead.archived_at < func.now() - func.make_interval(0, 0, 0, days),
+        )
+    ).all()
+    for lead in leads:
+        crm.erase(db, org.id, lead, user.user_id, None)
+    db.commit()
+    return {"erased": len(leads)}

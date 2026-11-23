@@ -242,3 +242,20 @@ def put_ai_settings(body: AISettingsIn, user: AdminDep, db: DbSession) -> dict:
         raise HTTPException(422, str(exc)) from exc
     db.commit()
     return out
+
+
+class ScoringPreviewIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    weights: dict[str, int]
+    thresholds: dict[str, int]
+
+
+@router.post("/settings/scoring/preview")
+def scoring_preview(body: ScoringPreviewIn, user: UserDep, db: DbSession) -> dict:
+    """Live preview on recent leads before saving new weights (nothing is saved)."""
+    try:
+        rows = analysis.preview_scores(db, user.organization_id, body.weights, body.thresholds)
+    except ConfigError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    moved = sum(1 for r in rows if r["old_band"] != r["new_band"])
+    return {"rows": rows, "band_changes": moved}
