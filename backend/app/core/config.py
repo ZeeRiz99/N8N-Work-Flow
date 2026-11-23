@@ -57,6 +57,22 @@ class Settings(BaseSettings):
     # Self-service sign-up creates a new organization; on in development, off in production.
     allow_registration: bool = True
 
+    # AI (ADR 004: Gemini only). "fake" runs the offline deterministic provider (tests, CI).
+    ai_provider: str = "gemini"
+    gemini_api_key: str = Field(default="", repr=False)
+    gemini_model: str = ""
+    gemini_model_fallback: str = ""
+    ai_timeout_seconds: float = 30.0
+    ai_daily_call_cap: int = 500  # per organization; past it, leads get a provisional score
+
+    @property
+    def gemini_models(self) -> tuple[str, str]:
+        """An empty value in .env means "use the default", not "no model"."""
+        return (
+            self.gemini_model.strip() or "gemini-3.6-flash",
+            self.gemini_model_fallback.strip() or "gemini-3.5-flash",
+        )
+
     @property
     def cookie_secure(self) -> bool:
         return self.app_env != "development"

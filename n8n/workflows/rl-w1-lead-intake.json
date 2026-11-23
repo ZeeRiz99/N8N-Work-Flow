@@ -46,7 +46,7 @@
             { "name": "Idempotency-Key", "value": "={{ $json.body.event_id }}:analyze" }
           ]
         },
-        "options": { "timeout": 30000 }
+        "options": { "timeout": 60000 }
       },
       "id": "a1b2c3d4-0000-4000-8000-000000000003",
       "name": "Analyze (backend)",

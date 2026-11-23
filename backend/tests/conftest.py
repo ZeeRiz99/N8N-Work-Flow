@@ -13,6 +13,8 @@ from pathlib import Path
 
 # Tests sign their own JWTs; CI has no .env, so give a test-only secret when none is configured.
 os.environ.setdefault("APP_SECRET_KEY", "test-only-secret-not-for-real-use-0123456789abcdef")
+# Tests never call a paid or rate-limited API: the offline provider runs the same pipeline.
+os.environ["AI_PROVIDER"] = "fake"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

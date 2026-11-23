@@ -6,7 +6,14 @@ from datetime import UTC, datetime, timedelta
 import httpx
 from sqlalchemy import func, select
 
-from app.models import Lead, LeadInquiry, Organization, OutboxEvent, WorkflowExecution
+from app.models import (
+    Lead,
+    LeadInquiry,
+    Organization,
+    OutboxEvent,
+    Service,
+    WorkflowExecution,
+)
 from app.services import outbox
 
 FORM = {
@@ -125,6 +132,16 @@ def test_service_key_cannot_reach_another_organizations_lead(client, db, org, se
 
 
 def test_fake_analysis_scores_and_is_idempotent(client, db, org, service_key):
+    db.add(
+        Service(
+            organization_id=org.id,
+            name="Website Development",
+            keywords=["website"],
+            price_min_minor=150000,
+            price_max_minor=500000,
+        )
+    )
+    db.flush()
     lead_id = _lead_id(client, db, org)
     headers = {"X-Service-Key": service_key}
     first = client.post(f"/api/v1/internal/leads/{lead_id}/analyze", headers=headers).json()
