@@ -68,3 +68,4 @@ Each phase logs its known limits here. They are fixed together after the last bu
 |---|---|---|---|
 | 36 | W1 runs analyze, alert and draft inline instead of calling W2/W3/W4 sub-workflows (§9.3) | `n8n/workflows/rl-w1-lead-intake.json` | Split into Execute-Workflow sub-workflows once n8n workflow ids are pinned in the import script |
 | 37 | The smoke test approves through the service layer (no browser login in the script) | `scripts/smoke.ps1` | Approve through the API with a smoke user, or via Playwright |
+| 38 | n8n holds one service key, scoped to one organization; approved drafts in other organizations are never claimed for sending (claim-send is org-scoped) | `api/deps.py`, n8n credentials | Platform service key (scope `internal:any-org`) that resolves the org from the draft or lead id; or one n8n credential per org |

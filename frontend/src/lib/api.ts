@@ -183,6 +183,32 @@ export interface AISettings {
   model: string;
 }
 
+export interface SavedDraft {
+  id: string;
+  lead_id: string;
+  lead_name: string | null;
+  lead_company: string | null;
+  lead_score: number | null;
+  lead_priority: Priority | null;
+  kind: "first_reply" | "follow_up";
+  to: string | null;
+  subject: string;
+  body: string;
+  style: string;
+  status: string;
+  checks: DraftCheck[];
+  all_passed: boolean;
+  source: string;
+  model: string | null;
+  edited: boolean;
+  rejection_reason: string | null;
+  send_error: string | null;
+  created_at: string;
+  approved_at: string | null;
+  sent_at: string | null;
+  note?: string | null;
+}
+
 export interface ScoringConfig {
   version: number;
   weights: Record<string, number>;
@@ -411,6 +437,16 @@ export const api = {
   analysis: (id: string) => request<LeadAnalysis>(`${lead(id)}/analysis`),
   reanalyze: (id: string) => request<unknown>(`${lead(id)}/reanalyze`, { method: "POST" }),
   scoring: () => request<ScoringConfig>("/api/v1/settings/scoring"),
+  drafts: (status = "pending_approval", leadId?: string) =>
+    request<SavedDraft[]>(`/api/v1/drafts${query({ status, lead_id: leadId })}`),
+  saveDraft: (id: string, kind = "first_reply", style: string | null = null) =>
+    request<SavedDraft>(`${lead(id)}/drafts`, json({ kind, style })),
+  editDraft: (id: string, subject: string, body: string) =>
+    request<SavedDraft>(`/api/v1/drafts/${id}`, send("PATCH", { subject, body })),
+  approveDraft: (id: string) =>
+    request<SavedDraft>(`/api/v1/drafts/${id}/approve`, { method: "POST" }),
+  rejectDraft: (id: string, reason: string) =>
+    request<SavedDraft>(`/api/v1/drafts/${id}/reject`, json({ reason })),
   rescore: () =>
     request<{ changed: number; version: number }>("/api/v1/settings/scoring/rescore", {
       method: "POST",

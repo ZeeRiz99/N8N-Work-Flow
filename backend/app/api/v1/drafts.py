@@ -5,7 +5,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import literal, select
 
 from app.api.deps import DbSession, UserDep, client_ip, csrf_protect
 from app.models import CommunicationDraft, Lead, Organization
@@ -68,7 +68,11 @@ def list_drafts(
         select(CommunicationDraft, Lead)
         .join(Lead, Lead.id == CommunicationDraft.lead_id)
         .where(CommunicationDraft.organization_id == user.organization_id)
-        .order_by(CommunicationDraft.created_at.desc())
+        .order_by(
+            # The queue is worked highest score first (mockup 03); history newest first.
+            Lead.score.desc().nulls_last() if status == "pending_approval" else literal(0),
+            CommunicationDraft.created_at.desc(),
+        )
         .limit(200)
     )
     if status != "all":

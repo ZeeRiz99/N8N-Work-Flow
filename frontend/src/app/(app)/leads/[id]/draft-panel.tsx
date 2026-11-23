@@ -1,15 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { buttonPrimary, buttonSecondary, card, field } from "@/components/ui-tokens";
 import {
   api,
   ApiError,
-  type Draft,
   type DraftCheck,
   errorText,
   type FollowUpStatus,
+  type SavedDraft,
 } from "@/lib/api";
 
 const STYLES = [
@@ -47,7 +48,7 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
   const [kind, setKind] = useState<"first_reply" | "follow_up">("first_reply");
   const [followUp, setFollowUp] = useState<FollowUpStatus | null>(null);
   const [defaultStyle, setDefaultStyle] = useState("professional");
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraft] = useState<SavedDraft | null>(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [checks, setChecks] = useState<DraftCheck[]>([]);
@@ -72,7 +73,7 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
     setBusy(true);
     setMessage(null);
     try {
-      const d = await api.generateDraft(leadId, style || null, kind);
+      const d = await api.saveDraft(leadId, kind, style || null);
       setDraft(d);
       setSubject(d.subject);
       setBody(d.body.replace(OPT_OUT, "").trimEnd());
@@ -89,7 +90,8 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
     if (!draft) return;
     setBusy(true);
     try {
-      const r = await api.checkDraft(leadId, subject, body, draft.services_mentioned);
+      const r = await api.editDraft(draft.id, subject, body);
+      setDraft(r);
       setChecks(r.checks);
       setDirty(false);
     } catch (e) {
@@ -118,8 +120,7 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
             Reply draft
           </h2>
           <p className="text-[13px] text-[#5A6075]">
-            Preview only: nothing is saved or sent. Approval and sending come with the Approvals
-            screen.
+            Drafts go to Approvals. Nothing is sent until someone approves it.
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-2">
@@ -255,7 +256,7 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
               </h3>
               {dirty && (
                 <button type="button" className={buttonSecondary} disabled={busy} onClick={recheck}>
-                  Check again
+                  Save and check again
                 </button>
               )}
             </div>
@@ -271,7 +272,10 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
                 : draft.source === "fake"
                   ? "Written by the offline AI"
                   : `Written by Gemini · ${draft.model}`}{" "}
-              · {draft.prompt_version}
+              ·{" "}
+              <Link href="/approvals" className="font-semibold text-[#4338CA]">
+                Review in Approvals →
+              </Link>
             </span>
           </div>
         </>

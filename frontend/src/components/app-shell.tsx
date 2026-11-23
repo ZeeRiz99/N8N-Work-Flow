@@ -22,6 +22,7 @@ const NAV: { label: string; href?: string; icon: ReactNode }[] = [
   },
   {
     label: "Approvals",
+    href: "/approvals",
     icon: (
       <>
         <circle cx="12" cy="12" r="9" />
