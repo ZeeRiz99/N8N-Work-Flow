@@ -67,7 +67,12 @@ test("MVP journey: form -> AI score -> alert -> draft -> approve -> sent -> foll
   await page.getByRole("link", { name }).filter({ visible: true }).first().click();
   const analysis = page.getByRole("region", { name: "AI analysis" }).filter({ visible: true });
   await expect(analysis.getByText("Website Development").first()).toBeVisible();
-  await expect(analysis.getByText("“around $2,000”").or(analysis.getByText(/\$2,000/)).first()).toBeVisible();
+  await expect(
+    analysis
+      .getByText("“around $2,000”")
+      .or(analysis.getByText(/\$2,000/))
+      .first(),
+  ).toBeVisible();
   await expect(
     page.getByRole("region", { name: "Why this score" }).filter({ visible: true }),
   ).toBeVisible();

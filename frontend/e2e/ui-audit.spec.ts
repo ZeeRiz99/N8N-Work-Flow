@@ -90,7 +90,9 @@ test("UI action audit: every page and control works without errors", async ({ pa
   await page.goto("/leads");
   await page.getByRole("link", { name: /.+/ }).filter({ visible: true }).locator("xpath=.").first();
   await page.locator("tbody a").filter({ visible: true }).first().click();
-  await expect(page.getByRole("heading", { name: "AI analysis" }).filter({ visible: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "AI analysis" }).filter({ visible: true }),
+  ).toBeVisible();
   const stage = page.getByLabel("Stage").filter({ visible: true });
   await stage.selectOption({ label: "Qualified" });
   await expect(page.getByRole("status").filter({ hasText: "Stage updated." })).toBeVisible();
@@ -130,7 +132,12 @@ test("UI action audit: every page and control works without errors", async ({ pa
   // Duplicates: scan
   await page.goto("/duplicates");
   await btn(page, /Scan/).click();
-  await expect(page.getByRole("status").or(page.getByText(/found|new pair|No new/i)).first()).toBeVisible();
+  await expect(
+    page
+      .getByRole("status")
+      .or(page.getByText(/found|new pair|No new/i))
+      .first(),
+  ).toBeVisible();
 
   // AI Assistant: playground and lead tab (arrow keys)
   await page.goto("/assistant");
