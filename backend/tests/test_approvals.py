@@ -196,3 +196,24 @@ def test_only_claim_send_moves_a_draft_to_sending():
     assert len(writers) == 1, writers
     name, before = writers[0]
     assert name == "approvals.py" and 'CommunicationDraft.status == "approved"' in before
+
+
+def test_workflow_error_alerts_are_throttled(client, db, owner):  # noqa: F811
+    key = _service_key_for(db, owner)
+    body = {
+        "workflow_key": "W4b",
+        "n8n_execution_id": "1",
+        "last_node": "Send email",
+        "message": "SMTP refused",
+    }
+    first = client.post("/api/v1/internal/workflow-errors", json=body, headers=svc(key)).json()
+    second = client.post(
+        "/api/v1/internal/workflow-errors", json={**body, "n8n_execution_id": "2"}, headers=svc(key)
+    ).json()
+    other = client.post(
+        "/api/v1/internal/workflow-errors",
+        json={**body, "workflow_key": "W1", "n8n_execution_id": "3"},
+        headers=svc(key),
+    ).json()
+    assert first["should_alert"] and not second["should_alert"] and other["should_alert"]
+    assert "Leads are safe" in first["text"]

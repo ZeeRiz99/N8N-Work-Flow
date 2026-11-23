@@ -1,0 +1,358 @@
+{
+  "id": "rlW4bSendDraft01",
+  "name": "RL | W4b | Send Approved Draft",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## RL | W4b | Send Approved Draft\n**Trigger:** webhook `draft-approved` from the backend.\n**Does:** claims the draft (atomic approved -> sending; 409 means already handled, stop) -> sends it by SMTP (Mailpit in dev) -> reports sent with the message id, or failed with the error -> logs the run.\n**Only approved drafts can be claimed.**",
+        "height": 280,
+        "width": 440
+      },
+      "id": "b4b00000-0000-4000-8000-000000000000",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rl/draft-approved",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "b4b00000-0000-4000-8000-000000000001",
+      "name": "Draft approved",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "5f3e2a10-6d2b-4c1a-9e7f-000000000b4b",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredWebhook001",
+          "name": "RL Webhook Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/drafts/{{ $('Draft approved').item.json.body.data.draft_id }}/claim-send",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Request-ID",
+              "value": "={{ $('Draft approved').item.json.body.request_id }}"
+            }
+          ]
+        }
+      },
+      "id": "b4b00000-0000-4000-8000-000000000002",
+      "name": "Claim send (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "b4b00000-0000-4000-8000-000000000003c",
+              "leftValue": "={{ $json.statusCode }}",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              },
+              "rightValue": 200
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b4b00000-0000-4000-8000-000000000003",
+      "name": "Claimed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "__ALERT_EMAIL_FROM__",
+        "toEmail": "={{ $json.body.to }}",
+        "subject": "={{ $json.body.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.body.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "b4b00000-0000-4000-8000-000000000004",
+      "name": "Send email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        -100
+      ],
+      "webhookId": "b4b00000-0000-4000-8000-000000000004",
+      "credentials": {
+        "smtp": {
+          "id": "rlCredSmtp000001",
+          "name": "RL SMTP"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/drafts/{{ $('Draft approved').item.json.body.data.draft_id }}/mark-sent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Request-ID",
+              "value": "={{ $('Draft approved').item.json.body.request_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ provider_message_id: $json.messageId || null }) }}"
+      },
+      "id": "b4b00000-0000-4000-8000-000000000005",
+      "name": "Mark sent (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/drafts/{{ $('Draft approved').item.json.body.data.draft_id }}/mark-failed",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Request-ID",
+              "value": "={{ $('Draft approved').item.json.body.request_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ error: String(($json.error && ($json.error.message || $json.error)) || 'SMTP send failed').slice(0, 290) }) }}"
+      },
+      "id": "b4b00000-0000-4000-8000-000000000006",
+      "name": "Mark failed (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/workflow-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Request-ID",
+              "value": "={{ $('Draft approved').item.json.body.request_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow_key: 'W4b', n8n_execution_id: String($execution.id), status: $('Claimed?').item.json.statusCode === 200 ? ($json.status === 'sent' ? 'success' : 'failed') : 'skipped', request_id: $('Draft approved').item.json.body.request_id, lead_id: $('Draft approved').item.json.body.data.lead_id, meta: { draft_id: $('Draft approved').item.json.body.data.draft_id, event_id: $('Draft approved').item.json.body.event_id, claim_status: $('Claimed?').item.json.statusCode, result: $json.status || null } }) }}"
+      },
+      "id": "b4b00000-0000-4000-8000-000000000007",
+      "name": "Log run (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Draft approved": {
+      "main": [
+        [
+          {
+            "node": "Claim send (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim send (backend)": {
+      "main": [
+        [
+          {
+            "node": "Claimed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claimed?": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send email": {
+      "main": [
+        [
+          {
+            "node": "Mark sent (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark failed (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark sent (backend)": {
+      "main": [
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark failed (backend)": {
+      "main": [
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "rlW9ErrorMon0001"
+  },
+  "tags": [],
+  "pinData": {}
+}

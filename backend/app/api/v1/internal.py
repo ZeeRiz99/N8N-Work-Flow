@@ -190,3 +190,67 @@ def mark_failed(draft_id: uuid.UUID, body: MarkFailedIn, org: ServiceOrg, db: Db
     except approvals.DraftStateError as exc:
         raise HTTPException(409, str(exc)) from exc
     return {"draft_id": str(d.id), "status": d.status}
+
+
+# ---------------------------------------------------------------- W9 error monitor
+
+ALERT_THROTTLE_MINUTES = 10
+
+
+class WorkflowErrorIn(BaseModel):
+    workflow_key: str = Field(max_length=40)
+    workflow_name: str | None = Field(default=None, max_length=200)
+    n8n_execution_id: str = Field(max_length=40)
+    last_node: str | None = Field(default=None, max_length=200)
+    message: str | None = Field(default=None, max_length=2000)
+
+
+@router.post("/workflow-errors")
+def log_workflow_error(err: WorkflowErrorIn, org: ServiceOrg, db: DbSession) -> dict:
+    """Log a failed run and decide whether to alert. The backend throttles alerts to one per
+    workflow per 10 minutes, so n8n keeps no state (§9.3 W9)."""
+    from datetime import UTC, timedelta
+
+    from sqlalchemy import func as sa_func
+
+    now = datetime.now(UTC)
+    recent_alert = db.scalar(
+        select(sa_func.count())
+        .select_from(WorkflowExecution)
+        .where(
+            WorkflowExecution.organization_id == org.id,
+            WorkflowExecution.workflow_key == err.workflow_key,
+            WorkflowExecution.status == "failed",
+            WorkflowExecution.meta["alerted"].astext == "true",
+            WorkflowExecution.finished_at >= now - timedelta(minutes=ALERT_THROTTLE_MINUTES),
+        )
+    )
+    should_alert = not recent_alert
+    stmt = insert(WorkflowExecution).values(
+        organization_id=org.id,
+        workflow_key=err.workflow_key,
+        n8n_execution_id=err.n8n_execution_id,
+        status="failed",
+        finished_at=now,
+        error_message=err.message,
+        meta={
+            "last_node": err.last_node,
+            "workflow_name": err.workflow_name,
+            "alerted": should_alert,
+        },
+    )
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["workflow_key", "n8n_execution_id"],
+        set_={"status": "failed", "finished_at": now, "error_message": err.message},
+    )
+    db.execute(stmt)
+    db.commit()
+    subject = f"Replyline automation failed: {err.workflow_name or err.workflow_key}"
+    text = (
+        f"Workflow: {err.workflow_name or err.workflow_key}\n"
+        f"Step: {err.last_node or 'unknown'}\n"
+        f"Error: {(err.message or 'no message')[:300]}\n"
+        f"Execution: {err.n8n_execution_id}\n"
+        "Leads are safe: the backend keeps every lead and retries delivery."
+    )
+    return {"should_alert": should_alert, "subject": subject, "text": text}

@@ -1,0 +1,164 @@
+{
+  "id": "rlW9ErrorMon0001",
+  "name": "RL | W9 | Error Monitor",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## RL | W9 | Error Monitor\n**Trigger:** n8n Error Trigger (the error workflow of every RL workflow).\n**Does:** logs the failed run to the backend -> emails the admin only when the backend says `should_alert` (once per workflow per 10 minutes; n8n keeps no state). Telegram replaces email once the bot exists.",
+        "height": 280,
+        "width": 440
+      },
+      "id": "e9e90000-0000-4000-8000-000000000000",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -280
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e9e90000-0000-4000-8000-000000000001",
+      "name": "On workflow error",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/workflow-errors",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow_key: ((($json.workflow && $json.workflow.name) || 'unknown').split('|')[1] || 'unknown').trim(), workflow_name: ($json.workflow && $json.workflow.name) || null, n8n_execution_id: String(($json.execution && $json.execution.id) || $execution.id), last_node: ($json.execution && $json.execution.lastNodeExecuted) || null, message: String(($json.execution && $json.execution.error && $json.execution.error.message) || 'unknown error').slice(0, 1900) }) }}"
+      },
+      "id": "e9e90000-0000-4000-8000-000000000002",
+      "name": "Log error (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "e9e90000-0000-4000-8000-000000000003c",
+              "leftValue": "={{ $json.should_alert }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e9e90000-0000-4000-8000-000000000003",
+      "name": "Alert now?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "__ALERT_EMAIL_FROM__",
+        "toEmail": "__ALERT_EMAIL_TO__",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "e9e90000-0000-4000-8000-000000000004",
+      "name": "Email the admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        -100
+      ],
+      "webhookId": "e9e90000-0000-4000-8000-000000000004",
+      "credentials": {
+        "smtp": {
+          "id": "rlCredSmtp000001",
+          "name": "RL SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "On workflow error": {
+      "main": [
+        [
+          {
+            "node": "Log error (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log error (backend)": {
+      "main": [
+        [
+          {
+            "node": "Alert now?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert now?": {
+      "main": [
+        [
+          {
+            "node": "Email the admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [],
+  "pinData": {}
+}
