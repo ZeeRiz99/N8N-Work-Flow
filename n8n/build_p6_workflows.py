@@ -112,8 +112,9 @@ def link(*pairs):
 
 
 def save(name, data):
-    (HERE / name).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
-                             encoding="utf-8", newline="\n")
+    (HERE / name).write_text(
+        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 def build_w1():
@@ -184,15 +185,34 @@ def build_w4b():
         "credentials": HOOK,
     }
     base = f"=__BACKEND_URL__/api/v1/internal/drafts/{{{{ {d}.data.draft_id }}}}"
-    claim = http(b + "02", "Claim send (backend)", [240, 0], base + "/claim-send",
-                 headers=rid, never_error=True)
-    claimed = if_node(b + "03", "Claimed?", [480, 0], "={{ $json.statusCode }}", "number",
-                      "equals", 200)
-    send = email(b + "04", "Send email", [720, -100], "={{ $json.body.to }}",
-                 "={{ $json.body.subject }}", "={{ $json.body.body }}", on_error=True)
-    sent = http(b + "05", "Mark sent (backend)", [960, -200], base + "/mark-sent",
-                body="={{ JSON.stringify({ provider_message_id: $json.messageId || null }) }}",
-                headers=rid)
+    claim = http(
+        b + "02",
+        "Claim send (backend)",
+        [240, 0],
+        base + "/claim-send",
+        headers=rid,
+        never_error=True,
+    )
+    claimed = if_node(
+        b + "03", "Claimed?", [480, 0], "={{ $json.statusCode }}", "number", "equals", 200
+    )
+    send = email(
+        b + "04",
+        "Send email",
+        [720, -100],
+        "={{ $json.body.to }}",
+        "={{ $json.body.subject }}",
+        "={{ $json.body.body }}",
+        on_error=True,
+    )
+    sent = http(
+        b + "05",
+        "Mark sent (backend)",
+        [960, -200],
+        base + "/mark-sent",
+        body="={{ JSON.stringify({ provider_message_id: $json.messageId || null }) }}",
+        headers=rid,
+    )
     failed = http(
         b + "06",
         "Mark failed (backend)",
@@ -235,7 +255,13 @@ def build_w4b():
                     "reports sent with the message id, or failed with the error -> logs the "
                     "run.\n**Only approved drafts can be claimed.**",
                 ),
-                hook, claim, claimed, send, sent, failed, log,
+                hook,
+                claim,
+                claimed,
+                send,
+                sent,
+                failed,
+                log,
             ],
             "connections": link(
                 ("Draft approved", "Claim send (backend)", 0),
@@ -247,8 +273,11 @@ def build_w4b():
                 ("Mark sent (backend)", "Log run (backend)", 0),
                 ("Mark failed (backend)", "Log run (backend)", 0),
             ),
-            "settings": {"executionOrder": "v1", "saveManualExecutions": True,
-                         "errorWorkflow": ERR_WF},
+            "settings": {
+                "executionOrder": "v1",
+                "saveManualExecutions": True,
+                "errorWorkflow": ERR_WF,
+            },
             "tags": [],
             "pinData": {},
         },
@@ -280,10 +309,17 @@ def build_w9():
             "$json.execution.error.message) || 'unknown error').slice(0, 1900) }) }}"
         ),
     )
-    should = if_node(e + "03", "Alert now?", [480, 0], "={{ $json.should_alert }}", "boolean",
-                     "true")
-    notify = email(e + "04", "Email the admin", [720, -100], "__ALERT_EMAIL_TO__",
-                   "={{ $json.subject }}", "={{ $json.text }}")
+    should = if_node(
+        e + "03", "Alert now?", [480, 0], "={{ $json.should_alert }}", "boolean", "true"
+    )
+    notify = email(
+        e + "04",
+        "Email the admin",
+        [720, -100],
+        "__ALERT_EMAIL_TO__",
+        "={{ $json.subject }}",
+        "={{ $json.text }}",
+    )
     save(
         "rl-w9-error-monitor.json",
         {
@@ -299,7 +335,10 @@ def build_w9():
                     "(once per workflow per 10 minutes; n8n keeps no state). Telegram replaces "
                     "email once the bot exists.",
                 ),
-                trig, log, should, notify,
+                trig,
+                log,
+                should,
+                notify,
             ],
             "connections": link(
                 ("On workflow error", "Log error (backend)", 0),
