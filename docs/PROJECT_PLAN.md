@@ -22,7 +22,7 @@ Rhythm: 1 phase = 1 branch = 1 pull request = 1 verified increment. Details per 
 - [x] P7 MVP gate and demo readiness (v0.1.0-mvp; live demo rehearsal by the developer pending)
 
 ## M2 Professional SaaS
-- [ ] P8 Follow-ups, duplicates, recovery
+- [x] P8 Follow-ups, duplicates and recovery
 - [ ] P9 Analytics, reports, settings, team
 - [ ] P10 Security, QA and reliability hardening (`v0.2.0`)
 
