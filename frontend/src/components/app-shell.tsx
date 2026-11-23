@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { UserMenu } from "@/components/session";
 
@@ -92,25 +92,50 @@ function Icon({ children }: { children: ReactNode }) {
   );
 }
 
+function Logo() {
+  return (
+    <div className="flex items-center gap-2.5 px-1">
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#4338CA" />
+        <path
+          d="M13 9.5 8 14.5l5 5M8 14.5h9.5a5.5 5.5 0 0 1 5.5 5.5v2"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="text-[17px] font-bold tracking-tight">Replyline</span>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  // Below tablet width the sidebar is a drawer (master prompt §10.3).
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
   return (
-    <div className="flex flex-1 flex-wrap items-stretch bg-[#F6F7FB]">
-      <aside className="flex w-full flex-col gap-6 border-[#E3E6EF] bg-white px-4 py-5 md:w-[232px] md:flex-none md:border-r">
-        <div className="flex items-center gap-2.5 px-1">
-          <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
-            <rect width="32" height="32" rx="8" fill="#4338CA" />
-            <path
-              d="M13 9.5 8 14.5l5 5M8 14.5h9.5a5.5 5.5 0 0 1 5.5 5.5v2"
-              fill="none"
-              stroke="#FFFFFF"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="text-[17px] font-bold tracking-tight">Replyline</span>
-        </div>
+    <div className="flex flex-1 items-stretch bg-[#F6F7FB]">
+      {open && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-30 bg-[#1A1D2B]/40 md:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+      <aside
+        id="main-menu"
+        className={`${open ? "fixed inset-y-0 left-0 z-40 flex w-[280px] overflow-y-auto shadow-xl" : "hidden"} flex-col gap-6 border-r border-[#E3E6EF] bg-white px-4 py-5 md:static md:flex md:w-[232px] md:flex-none md:shadow-none`}
+      >
+        <Logo />
         <nav aria-label="Main" className="flex flex-col gap-0.5">
           {NAV.map((item) => {
             const active = item.href && pathname.startsWith(item.href);
@@ -136,6 +161,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.label}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                onClick={() => setOpen(false)}
                 className={`${cls} ${active ? "bg-[#EEF0FF] font-semibold text-[#3730A3]" : "text-[#3A4057] hover:bg-[#F6F7FB]"}`}
               >
                 <Icon>{item.icon}</Icon>
@@ -148,8 +174,23 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span>Drafts only. Nothing is sent without your approval.</span>
         </div>
       </aside>
-      <div className="min-w-0 flex-[999_1_560px]">
-        <div className="flex flex-wrap items-center justify-end gap-3 border-b border-[#E3E6EF] bg-white px-4 py-3 sm:px-8">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E6EF] bg-white px-4 py-3 sm:px-8 md:justify-end">
+          <div className="flex items-center gap-2 md:hidden">
+            <button
+              type="button"
+              aria-label="Open menu"
+              aria-expanded={open}
+              aria-controls="main-menu"
+              onClick={() => setOpen(true)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-[#CDD2E0] bg-white"
+            >
+              <Icon>
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </Icon>
+            </button>
+            <Logo />
+          </div>
           <UserMenu />
         </div>
         <main className="mx-auto w-full max-w-[1180px] px-4 py-7 sm:px-8">{children}</main>

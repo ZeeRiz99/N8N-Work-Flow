@@ -78,7 +78,7 @@ function LeadsPerDay({ series }: { series: TrendPoint[] }) {
       ) : (
         <div className="relative">
           <svg
-            viewBox={`0 0 ${w + 32} ${h + 24}`}
+            viewBox={`0 -12 ${w + 40} ${h + 36}`}
             className="w-full"
             role="img"
             aria-label={`New leads per day, ${series.length} days, highest ${max}`}
@@ -115,9 +115,15 @@ function LeadsPerDay({ series }: { series: TrendPoint[] }) {
             {[0, Math.floor(series.length / 2), series.length - 1].map((i) => (
               <text
                 key={i}
-                x={32 + i * (bw + gap) + bw / 2}
+                x={
+                  i === series.length - 1
+                    ? 32 + series.length * (bw + gap) - gap
+                    : i === 0
+                      ? 32
+                      : 32 + i * (bw + gap) + bw / 2
+                }
                 y={h + 18}
-                textAnchor="middle"
+                textAnchor={i === 0 ? "start" : i === series.length - 1 ? "end" : "middle"}
                 fontSize="11"
                 fill="#5A6075"
               >
