@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, func, select
 
-from app.api.deps import DbSession, UserDep, csrf_protect
+from app.api.deps import AdminDep, DbSession, UserDep, csrf_protect
 from app.models import (
     CommunicationDraft,
     CommunicationLog,
@@ -216,3 +216,221 @@ def trends(user: UserDep, db: DbSession, days: int = Query(30, ge=7, le=365)) ->
         n, h = by_day.get(d, (0, 0))
         series.append({"date": d.isoformat(), "leads": n, "high": h})
     return {"days": days, "series": series}
+
+
+# ---------------------------------------------------------------- P9: sources, funnel, team
+
+
+def source_rows(db, org_id, since) -> list[dict]:
+    """Per lead source: leads, high priority, won, conversion and median score."""
+    from app.models import LeadSource
+
+    won_stage = select(PipelineStage.id).where(
+        PipelineStage.organization_id == org_id, PipelineStage.category == "won"
+    )
+    rows = db.execute(
+        select(
+            LeadSource.label,
+            func.count(Lead.id),
+            func.count(Lead.id).filter(Lead.priority == "high"),
+            func.count(Lead.id).filter(Lead.stage_id.in_(won_stage)),
+            func.percentile_cont(0.5).within_group(Lead.score),
+        )
+        .join(Lead, and_(Lead.source_id == LeadSource.id, Lead.created_at >= since), isouter=True)
+        .where(LeadSource.organization_id == org_id)
+        .group_by(LeadSource.id, LeadSource.label)
+        .order_by(func.count(Lead.id).desc(), LeadSource.label)
+    ).all()
+    return [
+        {
+            "source": label,
+            "leads": n,
+            "high": h,
+            "won": w,
+            "conversion": round(w / n, 3) if n else 0.0,
+            "median_score": round(m, 1) if m is not None else None,
+        }
+        for label, n, h, w, m in rows
+    ]
+
+
+@router.get("/sources")
+def sources(user: UserDep, db: DbSession, days: int = Query(30, ge=1, le=365)) -> dict:
+    since, _ = _window(days)
+    return {"days": days, "rows": source_rows(db, user.organization_id, since)}
+
+
+@router.get("/funnel")
+def funnel(user: UserDep, db: DbSession, days: int = Query(90, ge=1, le=365)) -> dict:
+    """Leads created in the window, by how far they got. A lead counts at its current stage
+    and every open stage before it (a won lead passed every step)."""
+    since, _ = _window(days)
+    stages = db.scalars(
+        select(PipelineStage)
+        .where(PipelineStage.organization_id == user.organization_id)
+        .order_by(PipelineStage.position)
+    ).all()
+    current = dict(
+        db.execute(
+            select(Lead.stage_id, func.count())
+            .where(
+                Lead.organization_id == user.organization_id,
+                Lead.created_at >= since,
+                Lead.archived_at.is_(None),
+            )
+            .group_by(Lead.stage_id)
+        ).all()
+    )
+    total = sum(current.values())
+    open_stages = [s for s in stages if s.category == "open"]
+    won = [s for s in stages if s.category == "won"]
+    lost = sum(current.get(s.id, 0) for s in stages if s.category == "lost")
+    won_n = sum(current.get(s.id, 0) for s in won)
+    steps = []
+    for i, s in enumerate(open_stages):
+        reached = sum(current.get(x.id, 0) for x in open_stages[i:]) + won_n
+        steps.append({"key": s.key, "label": s.label, "reached": reached})
+    steps.append({"key": "won", "label": won[0].label if won else "Won", "reached": won_n})
+    for i, st in enumerate(steps):
+        prev = steps[i - 1]["reached"] if i else total
+        st["from_previous"] = round(st["reached"] / prev, 3) if prev else 0.0
+    return {
+        "days": days,
+        "total": total,
+        "steps": steps,
+        "lost": lost,
+        "win_rate": round(won_n / total, 3) if total else 0.0,
+    }
+
+
+@router.get("/team")
+def team(user: UserDep, db: DbSession, days: int = Query(30, ge=1, le=365)) -> dict:
+    """Per member: leads assigned, drafts approved, emails sent, leads won."""
+    from app.models import OrganizationMember, User
+
+    since, _ = _window(days)
+    org_id = user.organization_id
+    members = db.execute(
+        select(User.id, User.full_name, OrganizationMember.role)
+        .join(OrganizationMember, OrganizationMember.user_id == User.id)
+        .where(OrganizationMember.organization_id == org_id)
+        .order_by(User.full_name)
+    ).all()
+    won_stage = select(PipelineStage.id).where(
+        PipelineStage.organization_id == org_id, PipelineStage.category == "won"
+    )
+    out = []
+    for uid, name, role in members:
+        assigned = _count(
+            db, Lead.organization_id == org_id, Lead.assigned_to == uid, Lead.archived_at.is_(None)
+        )
+        won = _count(
+            db,
+            Lead.organization_id == org_id,
+            Lead.assigned_to == uid,
+            Lead.stage_id.in_(won_stage),
+        )
+        approved = (
+            db.scalar(
+                select(func.count())
+                .select_from(CommunicationDraft)
+                .where(
+                    CommunicationDraft.organization_id == org_id,
+                    CommunicationDraft.approved_by == uid,
+                    CommunicationDraft.approved_at >= since,
+                )
+            )
+            or 0
+        )
+        sent = (
+            db.scalar(
+                select(func.count())
+                .select_from(CommunicationDraft)
+                .where(
+                    CommunicationDraft.organization_id == org_id,
+                    CommunicationDraft.approved_by == uid,
+                    CommunicationDraft.status == "sent",
+                    CommunicationDraft.sent_at >= since,
+                )
+            )
+            or 0
+        )
+        out.append(
+            {
+                "user_id": str(uid),
+                "name": name,
+                "role": role,
+                "assigned": assigned,
+                "approved": approved,
+                "sent": sent,
+                "won": won,
+            }
+        )
+    return {"days": days, "rows": out}
+
+
+@router.get("/export")
+def export(user: UserDep, db: DbSession, days: int = Query(30, ge=1, le=365)):
+    """Source performance and the daily series as CSV (numbers only, formula-safe)."""
+    import csv
+    import io
+
+    from fastapi.responses import Response
+
+    since, _ = _window(days)
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["section", "label", "leads", "high", "won", "conversion", "median_score"])
+    for r in source_rows(db, user.organization_id, since):
+        w.writerow(
+            [
+                "source",
+                "'" + r["source"] if r["source"][:1] in "=+-@" else r["source"],
+                r["leads"],
+                r["high"],
+                r["won"],
+                r["conversion"],
+                r["median_score"],
+            ]
+        )
+    for p in trends(user, db, max(days, 7))["series"]:
+        w.writerow(["day", p["date"], p["leads"], p["high"], "", "", ""])
+    return Response(
+        buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="replyline-analytics-{days}d.csv"'},
+    )
+
+
+# ---------------------------------------------------------------- report snapshots
+
+
+@router.get("/reports")
+def list_reports(user: UserDep, db: DbSession) -> list[dict]:
+    from app.models import ReportSnapshot
+    from app.services.reports import snapshot_out
+
+    rows = db.scalars(
+        select(ReportSnapshot)
+        .where(ReportSnapshot.organization_id == user.organization_id)
+        .order_by(ReportSnapshot.period_start.desc())
+        .limit(60)
+    ).all()
+    return [snapshot_out(s) for s in rows]
+
+
+@router.post("/reports/{kind}")
+def generate_report(kind: str, user: AdminDep, db: DbSession) -> dict:
+    """Create today's report now (outside the schedule). One per period: repeats return it."""
+    from fastapi import HTTPException
+
+    from app.services import reports
+
+    org = db.get(Organization, user.organization_id)
+    if kind == "daily":
+        snap = reports.make_daily(db, org)
+    elif kind == "source_performance":
+        snap = reports.make_source_performance(db, org)
+    else:
+        raise HTTPException(404, "Unknown report.")
+    return reports.snapshot_out(snap)
