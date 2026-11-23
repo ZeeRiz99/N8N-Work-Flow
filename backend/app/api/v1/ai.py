@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import update
 
-from app.api.deps import AdminDep, DbSession, UserDep, csrf_protect
-from app.models import Lead, ScoringConfig
+from app.api.deps import AdminDep, DbSession, UserDep, ai_limiter, csrf_protect
+from app.models import Lead, Organization, ScoringConfig
 from app.repositories.tenant import get_owned
 from app.scoring.engine import (
     DEFAULT_THRESHOLDS,
@@ -17,7 +17,7 @@ from app.scoring.engine import (
     ConfigError,
     validate_config,
 )
-from app.services import analysis, drafting
+from app.services import analysis, assistant, drafting
 from app.services.activity import record
 
 router = APIRouter(tags=["ai"], dependencies=[Depends(csrf_protect)])
@@ -141,7 +141,8 @@ def rescore(user: AdminDep, db: DbSession) -> dict:
 
 class DraftIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    style: Literal["professional", "friendly", "concise", "sales"] = "professional"
+    style: Literal["professional", "friendly", "concise", "sales"] | None = None
+    kind: Literal["first_reply", "follow_up"] = "first_reply"
 
 
 class DraftCheckIn(BaseModel):
@@ -154,9 +155,19 @@ class DraftCheckIn(BaseModel):
 @router.post("/leads/{lead_id}/drafts/generate")
 def generate_draft(lead_id: uuid.UUID, body: DraftIn, user: UserDep, db: DbSession) -> dict:
     """A reply draft with automatic checks. Nothing is saved or sent (approvals arrive in P6)."""
-    get_owned(db, Lead, lead_id, user.organization_id)
+    lead = get_owned(db, Lead, lead_id, user.organization_id)
+    _limit(user)
+    org = db.get(Organization, user.organization_id)
+    style = body.style or assistant.ai_settings(org)["default_style"]
+    if body.kind == "follow_up":
+        status = assistant.follow_up_status(db, lead)
+        if not status["eligible"]:
+            failed = [c["label"] for c in status["checks"] if not c["ok"]]
+            raise HTTPException(409, "No follow-up now: " + "; ".join(failed) + ".")
     try:
-        return drafting.generate_draft(db, user.organization_id, lead_id, body.style, user.user_id)
+        return drafting.generate_draft(
+            db, user.organization_id, lead_id, style, user.user_id, kind=body.kind
+        )
     except drafting.DraftRefused as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -169,3 +180,65 @@ def check_draft(lead_id: uuid.UUID, body: DraftCheckIn, user: UserDep, db: DbSes
         db, user.organization_id, lead_id, body.subject, body.body, body.services_mentioned
     )
     return {"checks": checks, "all_passed": all(c["ok"] for c in checks if c["severity"] == "fail")}
+
+
+def _limit(user) -> None:
+    if not ai_limiter.check(f"ai:{user.user_id}", 20):
+        raise HTTPException(429, "Too many AI requests. Please wait a minute.")
+
+
+# ---------------------------------------------------------------- assistant
+
+
+class AskIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    question: str = Field(min_length=2, max_length=500)
+
+
+@router.post("/leads/{lead_id}/ask")
+def ask_about_lead(lead_id: uuid.UUID, body: AskIn, user: UserDep, db: DbSession) -> dict:
+    """Answers only from this lead's own records and cites them. Read-only."""
+    lead = get_owned(db, Lead, lead_id, user.organization_id)
+    _limit(user)
+    return assistant.ask(db, user.organization_id, lead, body.question, user.user_id)
+
+
+class AnalyzeTextIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    message: str = Field(min_length=1, max_length=8000)
+    form: dict[str, str] = Field(default_factory=dict)
+
+
+@router.post("/ai/analyze-text")
+def analyze_text(body: AnalyzeTextIn, user: UserDep, db: DbSession) -> dict:
+    """Playground: analyze pasted text with your services and scoring. Nothing is saved."""
+    _limit(user)
+    return assistant.analyze_text(db, user.organization_id, body.message, body.form)
+
+
+@router.get("/leads/{lead_id}/follow-up")
+def follow_up(lead_id: uuid.UUID, user: UserDep, db: DbSession) -> dict:
+    lead = get_owned(db, Lead, lead_id, user.organization_id)
+    return assistant.follow_up_status(db, lead)
+
+
+class AISettingsIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    default_style: Literal["professional", "friendly", "concise", "sales"]
+    daily_cap: int = Field(ge=0)
+
+
+@router.get("/settings/ai")
+def get_ai_settings(user: UserDep, db: DbSession) -> dict:
+    return assistant.ai_settings(db.get(Organization, user.organization_id))
+
+
+@router.put("/settings/ai")
+def put_ai_settings(body: AISettingsIn, user: AdminDep, db: DbSession) -> dict:
+    org = db.get(Organization, user.organization_id)
+    try:
+        out = assistant.save_ai_settings(org, body.default_style, body.daily_cap)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    db.commit()
+    return out

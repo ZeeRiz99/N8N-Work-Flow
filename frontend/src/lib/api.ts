@@ -137,6 +137,52 @@ export interface Draft {
   all_passed: boolean;
 }
 
+export interface AskResult {
+  answer: string;
+  refused: boolean;
+  citations: { id: string; kind: string; label: string }[];
+  removed_citations: number;
+  supported: boolean;
+  source: string;
+  model: string | null;
+  note: string | null;
+}
+
+export interface FollowUpStatus {
+  eligible: boolean;
+  checks: { key: string; label: string; ok: boolean }[];
+  next_possible: string | null;
+  replies_tracked: boolean;
+}
+
+export interface PlaygroundResult {
+  facts: Facts;
+  intent: string | null;
+  summary: string | null;
+  guard_flags: string[];
+  score: {
+    total: number;
+    band: Priority;
+    explanation: string;
+    factors: Omit<Factor, "label">[];
+    caps: string[];
+    provisional: boolean;
+  };
+  needs_review: boolean;
+  source: string | null;
+  model: string | null;
+  note: string | null;
+  saved: boolean;
+}
+
+export interface AISettings {
+  default_style: string;
+  daily_cap: number;
+  server_max_daily_cap: number;
+  provider: string;
+  model: string;
+}
+
 export interface ScoringConfig {
   version: number;
   weights: Record<string, number>;
@@ -369,8 +415,15 @@ export const api = {
     request<{ changed: number; version: number }>("/api/v1/settings/scoring/rescore", {
       method: "POST",
     }),
-  generateDraft: (id: string, style: string) =>
-    request<Draft>(`${lead(id)}/drafts/generate`, json({ style })),
+  generateDraft: (id: string, style: string | null, kind = "first_reply") =>
+    request<Draft>(`${lead(id)}/drafts/generate`, json({ style, kind })),
+  ask: (id: string, question: string) => request<AskResult>(`${lead(id)}/ask`, json({ question })),
+  followUp: (id: string) => request<FollowUpStatus>(`${lead(id)}/follow-up`),
+  analyzeText: (message: string) =>
+    request<PlaygroundResult>("/api/v1/ai/analyze-text", json({ message })),
+  aiSettings: () => request<AISettings>("/api/v1/settings/ai"),
+  saveAiSettings: (body: { default_style: string; daily_cap: number }) =>
+    request<AISettings>("/api/v1/settings/ai", send("PUT", body)),
   checkDraft: (id: string, subject: string, body: string, services_mentioned: string[]) =>
     request<{ checks: DraftCheck[]; all_passed: boolean }>(
       `${lead(id)}/drafts/check`,

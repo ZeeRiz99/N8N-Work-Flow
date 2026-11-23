@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { buttonPrimary, buttonSecondary, card, field } from "@/components/ui-tokens";
-import { api, ApiError, type Draft, type DraftCheck, errorText } from "@/lib/api";
+import {
+  api,
+  ApiError,
+  type Draft,
+  type DraftCheck,
+  errorText,
+  type FollowUpStatus,
+} from "@/lib/api";
 
 const STYLES = [
   ["professional", "Professional"],
@@ -36,7 +43,10 @@ function Checks({ checks }: { checks: DraftCheck[] }) {
 }
 
 export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: string }) {
-  const [style, setStyle] = useState<(typeof STYLES)[number][0]>("professional");
+  const [style, setStyle] = useState<string>("");
+  const [kind, setKind] = useState<"first_reply" | "follow_up">("first_reply");
+  const [followUp, setFollowUp] = useState<FollowUpStatus | null>(null);
+  const [defaultStyle, setDefaultStyle] = useState("professional");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -45,11 +55,24 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    api
+      .aiSettings()
+      .then((s) => setDefaultStyle(s.default_style))
+      .catch(() => undefined);
+    api
+      .followUp(leadId)
+      .then(setFollowUp)
+      .catch(() => undefined);
+  }, [leadId]);
+
+  const followUpBlocked = kind === "follow_up" && followUp !== null && !followUp.eligible;
+
   async function generate() {
     setBusy(true);
     setMessage(null);
     try {
-      const d = await api.generateDraft(leadId, style);
+      const d = await api.generateDraft(leadId, style || null, kind);
       setDraft(d);
       setSubject(d.subject);
       setBody(d.body.replace(OPT_OUT, "").trimEnd());
@@ -99,7 +122,21 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
             screen.
           </p>
         </div>
-        <div className="flex items-end gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="draft-kind" className="text-xs font-semibold text-[#3A4057]">
+              Type
+            </label>
+            <select
+              id="draft-kind"
+              className={field}
+              value={kind}
+              onChange={(e) => setKind(e.target.value as typeof kind)}
+            >
+              <option value="first_reply">First reply</option>
+              <option value="follow_up">Follow-up</option>
+            </select>
+          </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="draft-style" className="text-xs font-semibold text-[#3A4057]">
               Style
@@ -108,8 +145,11 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
               id="draft-style"
               className={field}
               value={style}
-              onChange={(e) => setStyle(e.target.value as typeof style)}
+              onChange={(e) => setStyle(e.target.value)}
             >
+              <option value="">
+                Default ({STYLES.find(([v]) => v === defaultStyle)?.[1] ?? defaultStyle})
+              </option>
               {STYLES.map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
@@ -120,7 +160,7 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
           <button
             type="button"
             className={buttonPrimary}
-            disabled={busy || !!disabled}
+            disabled={busy || !!disabled || followUpBlocked}
             onClick={generate}
           >
             {busy && !draft ? "Writing…" : draft ? "Write again" : "Write a draft"}
@@ -128,6 +168,34 @@ export function DraftPanel({ leadId, disabled }: { leadId: string; disabled?: st
         </div>
       </div>
       {disabled && <p className="text-sm text-[#5A6075]">{disabled}</p>}
+      {kind === "follow_up" && followUp && (
+        <div className="rounded-lg bg-[#F6F7FB] p-4 text-sm">
+          <p className="mb-1.5 font-semibold">
+            {followUp.eligible ? "A follow-up is appropriate now" : "Not time for a follow-up yet"}
+          </p>
+          <ul className="flex flex-col gap-1">
+            {followUp.checks.map((c) => (
+              <li key={c.key} className="flex gap-2">
+                <span
+                  aria-hidden="true"
+                  className="font-bold"
+                  style={{ color: c.ok ? "#1E6B3A" : "#A32A12" }}
+                >
+                  {c.ok ? "✓" : "✗"}
+                </span>
+                <span>
+                  <span className="sr-only">{c.ok ? "Met: " : "Not met: "}</span>
+                  {c.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-[#5A6075]">
+            Replyline decides this with fixed rules; the AI only writes the wording. Customer
+            replies are not tracked yet.
+          </p>
+        </div>
+      )}
       {message && (
         <p role="status" className="text-sm text-[#3A4057]">
           {message}

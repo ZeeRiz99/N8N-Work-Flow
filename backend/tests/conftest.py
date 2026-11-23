@@ -119,7 +119,8 @@ def client(db: Session) -> Iterator[TestClient]:
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter() -> None:
-    from app.api.deps import login_limiter, public_form_limiter
+    from app.api.deps import ai_limiter, login_limiter, public_form_limiter
 
     public_form_limiter._hits.clear()
     login_limiter._hits.clear()
+    ai_limiter._hits.clear()

@@ -28,6 +28,27 @@ def template_draft(data: dict) -> DraftOutput:
     services = data.get("services", [])
     facts = data.get("facts", {})
     lines = [f"Hi {first}," if first else "Hello,", ""]
+    if data.get("kind") == "follow_up":
+        topic = services[0]["name"].lower() if services else "your project"
+        lines.append(f"I'm following up on your message about {topic}.")
+        lines.append("If it would help, we're happy to answer any questions.")
+        first_q = [
+            QUESTION_TEXT.get(q, f"Could you share more about {q}?")
+            for q in data.get("open_questions", [])
+        ][:1]
+        if first_q:
+            lines += ["", first_q[0]]
+        lines += [
+            "",
+            data.get("business", {}).get("response_time_line")
+            or "We look forward to hearing from you.",
+        ]
+        return DraftOutput(
+            subject=f"Following up: {services[0]['name']}" if services else "Following up",
+            body="\n".join(lines),
+            questions=first_q,
+            services_mentioned=[services[0]["name"]] if services else [],
+        )
     lines.append(OPENERS.get(style, OPENERS["professional"]).format(org=org))
     if services:
         s = services[0]

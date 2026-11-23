@@ -74,7 +74,13 @@ def open_questions(missing: list[str], lead: Lead) -> list[str]:
 
 
 def build_input(
-    org: Organization, lead: Lead, facts: dict, catalog: list[dict], style: str, language: str
+    org: Organization,
+    lead: Lead,
+    facts: dict,
+    catalog: list[dict],
+    style: str,
+    language: str,
+    kind: str = "first_reply",
 ) -> dict:
     """Only allowed inputs (§8.4): no other leads, notes, scores or internal URLs."""
     wanted = [s["name"] for s in facts.get("services", []) if s.get("name") != "other"]
@@ -86,6 +92,7 @@ def build_input(
             "response_time_line": settings.get("response_time_line"),
         },
         "customer": {"first_name": (lead.full_name or "").split(" ")[0][:40]},
+        "kind": kind,  # first_reply | follow_up
         "style": style,
         "style_guide": draft_v1.STYLES[style],
         "language": language,
@@ -114,6 +121,7 @@ def generate_draft(
     style: str = "professional",
     actor_id: uuid.UUID | None = None,
     provider: AIProvider | None = None,
+    kind: str = "first_reply",
 ) -> dict | None:
     lead = db.scalar(select(Lead).where(Lead.id == lead_id, Lead.organization_id == org_id))
     if lead is None:
@@ -127,7 +135,7 @@ def generate_draft(
     facts = ((analysis.extracted or {}).get("grounded", {}) if analysis else {}) or {}
     language = ((analysis.extracted or {}).get("raw", {}) if analysis else {}).get("language", "en")
     catalog = _catalog(db, org_id)
-    data = build_input(org, lead, facts, catalog, style, language or "en")
+    data = build_input(org, lead, facts, catalog, style, language or "en", kind)
     user = draft_v1.build_user(data)
 
     source, model, note = "template", None, None
@@ -159,7 +167,7 @@ def generate_draft(
         db,
         org_id,
         lead.id,
-        "draft_generated",
+        "follow_up_drafted" if kind == "follow_up" else "draft_generated",
         "user" if actor_id else "system",
         actor_id,
         style=style,
@@ -174,6 +182,7 @@ def generate_draft(
         "questions": out.questions,
         "services_mentioned": out.services_mentioned,
         "style": style,
+        "kind": kind,
         "source": source,
         "model": model,
         "prompt_version": draft_v1.PROMPT_VERSION,

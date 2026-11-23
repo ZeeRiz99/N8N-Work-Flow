@@ -94,6 +94,12 @@ def _calls_today(db: Session, org_id: uuid.UUID, provider: str) -> int:
     )
 
 
+def _org_cap(org: Organization) -> int:
+    """The organization's own daily limit (AI settings), never above the server limit."""
+    server = get_settings().ai_daily_call_cap
+    return min(int((org.settings or {}).get("ai", {}).get("daily_cap", server)), server)
+
+
 def _catalog(db: Session, org_id: uuid.UUID) -> list[dict]:
     services = db.scalars(
         select(Service).where(Service.organization_id == org_id, Service.active.is_(True))
@@ -172,9 +178,7 @@ def analyze_lead(
         error = CACHE_HIT
     elif isinstance(provider, str):
         error = provider
-    elif provider.name != "fake" and _calls_today(db, org_id, provider.name) >= (
-        get_settings().ai_daily_call_cap
-    ):
+    elif provider.name != "fake" and _calls_today(db, org_id, provider.name) >= _org_cap(org):
         error = "daily AI call cap reached"
     else:
         try:

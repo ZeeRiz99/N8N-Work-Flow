@@ -102,4 +102,12 @@ class FakeAIProvider:
 
             out = template_draft(extract_data(user))
             return AIResult(out, self.name, self.model, round((time.perf_counter() - start) * 1000))
+        from app.ai.schemas import QAOutput
+
+        if schema is QAOutput:
+            from app.ai.keyword_qa import keyword_answer
+            from app.ai.prompts.qa_v1 import extract
+
+            out = keyword_answer(*extract(user))
+            return AIResult(out, self.name, self.model, round((time.perf_counter() - start) * 1000))
         raise NotImplementedError(f"FakeAIProvider cannot produce {schema.__name__}")

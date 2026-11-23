@@ -6,6 +6,7 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from "react"
 
 import { AnalysisPanel, ScorePanel, sourceLabel } from "./ai-panels";
 import { DraftPanel } from "./draft-panel";
+import { AskPanel } from "@/components/ask-panel";
 import { AiStatusPill, PriorityBadge } from "@/components/badges";
 import { useSession } from "@/components/session";
 import {
@@ -42,6 +43,10 @@ function describe(a: Activity): string {
       return `Scored ${p.score}, ${p.band} priority${p.provisional ? " (provisional)" : ""}`;
     case "reanalysis_requested":
       return "Re-analysis requested";
+    case "question_asked":
+      return "Question asked about this lead";
+    case "follow_up_drafted":
+      return `Follow-up draft written (${p.style})`;
     case "draft_generated":
       return `Reply draft written (${p.style})`;
     case "rescored":
@@ -339,6 +344,7 @@ export function LeadDetail() {
 
         <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-6">
           {analysis && <ScorePanel data={analysis} />}
+          <AskPanel leadId={lead.id} compact />
           <ContactDetails lead={lead} onSaved={(m) => act(async () => undefined, m)} />
           <section className={`${card} flex flex-col gap-3 p-5`}>
             <h2 className="text-base font-semibold">Timeline</h2>

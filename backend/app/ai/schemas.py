@@ -87,3 +87,11 @@ class DraftOutput(Strict):
     body: str = Field(max_length=3000, description="Plain text, no signature block, no links")
     questions: list[str] = Field(default_factory=list, max_length=5)
     services_mentioned: list[str] = Field(default_factory=list, max_length=3)
+
+
+class QAOutput(Strict):
+    """Lead Q&A (master prompt §8.5): answer only from the supplied records, cite their ids."""
+
+    answer: str = Field(max_length=1200)
+    citations: list[str] = Field(default_factory=list, max_length=10)
+    refused: bool = False

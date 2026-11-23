@@ -306,7 +306,7 @@ def load(
                 inq.form_fields = form
         created.append(lead)
     # Two near-duplicates (same person, typo in the name, other email) for the Duplicates page.
-    for src in created[:2]:
+    for src in [lead for lead in created if lead.company][:2]:  # company makes it a clear pair
         twin = crm.create_lead(
             db,
             org,
