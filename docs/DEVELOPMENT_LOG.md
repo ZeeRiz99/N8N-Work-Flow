@@ -2,6 +2,19 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-23: Phase 5 (AI intelligence), build complete; live eval pending quota
+
+- **Pipeline:** guard (NFKC, invisible characters, 4,000-char cut, injection tripwires) → prompt `analysis-v1` (customer text as a tagged data block) → Gemini structured output → grounding (every fact needs a real quote; budgets re-parsed by code) → deterministic 7-factor scoring with per-org versioned weights → `lead_analyses` + `lead_scores` history. Cache by input hash and provider.
+- **Reliability:** timeout, retries with backoff and Retry-After, fallback model, circuit breaker, per-org daily cap, provisional score on any failure, automatic retry worker; fault-injection tests for 429, 5xx, timeout, malformed JSON and unknown fields.
+- **Drafts (preview):** prompt `draft-v1`, code checks (catalog services, catalog prices, link allow-list, no promised dates/meetings/discounts/attachments, length, opt-out line added by code, do-not-contact, language warning), template fallback, no drafts for spam or job seekers, follow-up drafts after code-decided eligibility.
+- **Assistant:** Lead Q&A grounded in that lead's records with validated citations; text playground (nothing saved); AI settings (default style, daily cap); re-score action without AI calls.
+- **Evaluation:** 40-case dataset (11 categories incl. Urdu, Roman Urdu, PKR), resumable runner, report with field accuracy, band agreement, rejection rate, latency and tokens. Fake-provider report committed; the Gemini report is pending the free-tier quota.
+- **Red team:** 16 techniques in the test suite (no score boost, no leakage, schema-valid); the guard flags or truncates all 16 and flags none of the 38 honest inquiries.
+- **UI:** AI analysis panel (facts with quotes), "Why this score" factor bars, reply draft panel with live checks, Ask panel, AI Assistant page, Settings (Lead scoring, AI), sample-data buttons.
+- **Fixed on the way:** money parser (European `4.000`, lakh as rupees, word boundaries, decimals, small numbers hiding budgets); `created_at` used Postgres `now()` (transaction start) so "latest" picks were random within a transaction, now a strictly increasing Python default; Gemini typed schema rejected `additionalProperties` (switched to JSON Schema).
+- **Quota:** the free-tier daily quota ran out after about 30 calls; the n8n W1 analyze timeout is now 60 s.
+- Decisions: ADR 011. Tests: 243 backend, Playwright journey passes.
+
 ## 2026-11-23: Phase 4 (auth, organizations, CRM core)
 
 - **Auth (D7):** argon2id passwords; 15-minute access JWT and rotating refresh token, both httpOnly cookies (refresh scoped to `/api/v1/auth`); reuse of a rotated refresh token revokes the whole login family; membership and role re-checked on every request; CSRF = custom header + origin check; login rate limit; temporary P3 dev access removed. `app.cli set-demo-owner` creates the developer's login with a hidden password prompt.
