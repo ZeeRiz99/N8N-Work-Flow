@@ -28,6 +28,8 @@ export interface LeadRow {
   priority: Priority;
   score: number | null;
   score_source: string | null;
+  score_provisional: boolean;
+  needs_review: boolean;
   ai_status: AiStatus;
   stage: { id: string | null; key: string | null; label: string | null };
   source: string | null;
@@ -39,6 +41,90 @@ export interface LeadRow {
   created_at: string;
   last_interaction_at: string;
   merged?: boolean;
+}
+
+export interface Quote {
+  text?: string;
+  name?: string;
+  evidence: string | null;
+  source?: "message" | "form";
+}
+
+export interface Facts {
+  services: Quote[];
+  budget: {
+    min_minor: number | null;
+    max_minor: number | null;
+    currency: string;
+    comparable: boolean;
+    evidence: string | null;
+    source: "message" | "form";
+  } | null;
+  timeline: {
+    text: string | null;
+    urgency: string;
+    evidence: string | null;
+    source: string | null;
+  };
+  company: string | null;
+  industry: string | null;
+  requirements: Quote[];
+  buying_signals: Quote[];
+  missing_info: string[];
+  rejected: { field: string; reason: string }[];
+  conflicts: string[];
+}
+
+export interface Factor {
+  key: string;
+  label: string;
+  points: number;
+  max: number;
+  reason: string;
+  evidence: string | null;
+}
+
+export interface LeadAnalysis {
+  analysis: {
+    id: string;
+    status: "done" | "failed" | "skipped";
+    error: string | null;
+    provider: string;
+    model: string | null;
+    prompt_version: string;
+    latency_ms: number | null;
+    created_at: string;
+    facts: Facts;
+    intent: string | null;
+    red_flags: string[];
+    summary: string | null;
+    recommended_next_action: string | null;
+    guard_flags: string[];
+  } | null;
+  score: {
+    total: number;
+    band: Priority;
+    factors: Factor[];
+    explanation: string;
+    caps: string[];
+    provisional: boolean;
+    needs_review: boolean;
+    config_version: number;
+    created_at: string;
+  } | null;
+}
+
+export interface ScoringConfig {
+  version: number;
+  weights: Record<string, number>;
+  thresholds: { high_min: number; medium_min: number };
+  ideal_industries: string[];
+  labels: Record<string, string>;
+  defaults: {
+    weights: Record<string, number>;
+    thresholds: { high_min: number; medium_min: number };
+  };
+  updated_at: string;
 }
 
 export interface Page<T> {
@@ -253,6 +339,14 @@ export const api = {
   addNote: (id: string, body: string) => request<Note>(`${lead(id)}/notes`, json({ body })),
   activities: (id: string) => request<Activity[]>(`${lead(id)}/activities`),
   inquiries: (id: string) => request<Inquiry[]>(`${lead(id)}/inquiries`),
+  analysis: (id: string) => request<LeadAnalysis>(`${lead(id)}/analysis`),
+  reanalyze: (id: string) => request<unknown>(`${lead(id)}/reanalyze`, { method: "POST" }),
+  scoring: () => request<ScoringConfig>("/api/v1/settings/scoring"),
+  saveScoring: (body: {
+    weights: Record<string, number>;
+    thresholds: { high_min: number; medium_min: number };
+    ideal_industries: string[];
+  }) => request<ScoringConfig>("/api/v1/settings/scoring", send("PUT", body)),
 
   // data
   importCsv: (csv: string, dry_run: boolean, mapping?: Record<string, string>) =>

@@ -136,6 +136,8 @@ def _row(lead, stage_key, stage_label, source_label, assignee_name, msg, count) 
         "priority": lead.priority,
         "score": lead.score,
         "score_source": lead.score_source,
+        "score_provisional": lead.score_provisional,
+        "needs_review": lead.needs_review,
         "ai_status": lead.ai_status,
         "stage": {
             "id": str(lead.stage_id) if lead.stage_id else None,

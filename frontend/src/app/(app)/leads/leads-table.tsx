@@ -285,8 +285,8 @@ export function LeadsTable() {
                       ) : (
                         <>
                           <strong>{lead.score}</strong>
-                          {lead.score_source === "fake" && (
-                            <span className="ml-1.5 text-xs text-[#5A6075]">(fake AI)</span>
+                          {lead.score_provisional && (
+                            <span className="ml-1.5 text-xs text-[#5A6075]">(provisional)</span>
                           )}
                         </>
                       )}
@@ -295,6 +295,11 @@ export function LeadsTable() {
                       <div className="flex flex-col items-start gap-1">
                         <PriorityBadge priority={lead.priority} />
                         <AiStatusPill status={lead.ai_status} />
+                        {lead.needs_review && (
+                          <span className="rounded-full bg-[#FEF6F3] px-2.5 py-0.5 text-xs font-semibold text-[#A32A12]">
+                            Needs review
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3">{lead.stage.label ?? "—"}</td>

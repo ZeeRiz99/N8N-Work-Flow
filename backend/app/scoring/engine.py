@@ -249,7 +249,8 @@ def score(
         parts.append(f"{repeat} follow-up message{'s' if repeat > 1 else ''}")
     if inp.has_phone:
         parts.append("phone given")
-    fractions["engagement"] = (eng, ("; ".join(parts) or "First message, no phone") + ".", None)
+    text = "; ".join(parts) or "First message, no phone"
+    fractions["engagement"] = (eng, text[0].upper() + text[1:] + ".", None)
 
     icp = ideal_customer or {}
     if not icp.get("industries") and not icp.get("min_budget_minor"):

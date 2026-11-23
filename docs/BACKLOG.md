@@ -46,3 +46,13 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | 23 | E2E runs leave "E2E Test" organizations in the dev database (cleaned by hand after runs) | dev DB | Add a cleanup step or a dedicated e2e database |
 | 24 | No invite flow yet: new team members can only be added by sign-up or the CLI | `app/api/v1/org.py` | P9: member invites (master prompt §13 P9) |
 | 25 | Running backend processes do not reload code; after pulling changes, restart the backend (the e2e run hit this) | dev workflow | Document in README; use `--reload` while developing |
+
+## From Phase 5
+
+| # | Limit | Where | Fix later |
+|---|---|---|---|
+| 26 | A lead whose analysis failed (outage, quota) keeps a provisional score until someone clicks Re-analyze or a new message arrives; nothing retries it automatically | `services/analysis.py` | Scheduled retry of `ai_status=failed` leads with backoff (P6 scheduler / P11) |
+| 27 | The Gemini free tier has a small daily request quota (used up on 2026-11-23 after ~30 dev, smoke and seed calls); `AI_DAILY_CALL_CAP` defaults to 500, far above it | `.env`, `core/config.py` | Document the free-tier quota; lower the default cap; surface "AI quota reached" in the UI |
+| 28 | Portfolio shot `p5-04` (prompt injection) shows the fallback view because the quota ran out before that lead was analyzed | `docs/portfolio` | Re-run `seed-portfolio` + `portfolio-shots.mjs` after the quota resets |
+| 29 | Changing scoring weights affects only new and re-analyzed leads; there is no preview of how existing leads would move, and no bulk re-score | `/settings/scoring` | "Preview on recent leads" and an admin bulk re-score (no AI call needed) |
+| 30 | Re-analyze runs synchronously in the request (Gemini took 1 to 20 s); a slow provider holds the button | `api/v1/ai.py` | Queue through the outbox and poll, as new leads do |
