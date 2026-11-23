@@ -193,7 +193,7 @@ def score(
         first = inp.buying_signals[0]["evidence"] if signals else None
         fractions["buying_intent"] = (
             intent_f,
-            f"Intent: {inp.intent.replace('_', ' ')}{sig_txt}.",
+            f"{inp.intent.replace('_', ' ').capitalize()}{sig_txt}.",
             first,
         )
         fractions["urgency"] = (
