@@ -1,0 +1,213 @@
+{
+  "id": "rlW8DailyRep0001",
+  "name": "RL | W8 | Daily Business Summary",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## RL | W8 | Daily Business Summary\n**Trigger:** hourly; the backend answers only between 08:30 and 09:29 in the organization's timezone, once a day.\n**Does:** numbers from SQL, prose checked number by number (template otherwise), saved as a snapshot -> email the team.",
+        "height": 280,
+        "width": 440
+      },
+      "id": "rlW8DailyRep0001n",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "rlw8da00-0000-4000-8000-000000000001",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=__BACKEND_URL__/api/v1/internal/reports/daily",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "rlw8da00-0000-4000-8000-000000000002",
+      "name": "Report due? (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "rlw8da00-0000-4000-8000-000000000003c",
+              "leftValue": "={{ $json.report }}",
+              "operator": {
+                "type": "object",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rlw8da00-0000-4000-8000-000000000003",
+      "name": "Report ready?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "__ALERT_EMAIL_FROM__",
+        "toEmail": "__ALERT_EMAIL_TO__",
+        "subject": "={{ $json.report.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.report.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "rlw8da00-0000-4000-8000-000000000004",
+      "name": "Email the team",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        720,
+        -100
+      ],
+      "webhookId": "rlw8da00-0000-4000-8000-000000000004",
+      "credentials": {
+        "smtp": {
+          "id": "rlCredSmtp000001",
+          "name": "RL SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/workflow-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow_key: 'W8', n8n_execution_id: String($execution.id), status: 'success', meta: { snapshot_id: $('Report due? (backend)').item.json.report.snapshot_id } }) }}"
+      },
+      "id": "rlw8da00-0000-4000-8000-000000000005",
+      "name": "Log run (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      },
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Report due? (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report due? (backend)": {
+      "main": [
+        [
+          {
+            "node": "Report ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report ready?": {
+      "main": [
+        [
+          {
+            "node": "Email the team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the team": {
+      "main": [
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "rlW9ErrorMon0001"
+  },
+  "tags": [],
+  "pinData": {}
+}

@@ -309,6 +309,71 @@ export interface MergePreview {
   do_not_contact: boolean;
 }
 
+export interface SourceRow {
+  source: string;
+  leads: number;
+  high: number;
+  won: number;
+  conversion: number;
+  median_score: number | null;
+}
+
+export interface FunnelData {
+  days: number;
+  total: number;
+  lost: number;
+  win_rate: number;
+  steps: { key: string; label: string; reached: number; from_previous: number }[];
+}
+
+export interface TeamRow {
+  user_id: string;
+  name: string;
+  role: string;
+  assigned: number;
+  approved: number;
+  sent: number;
+  won: number;
+}
+
+export interface ReportSnapshot {
+  id: string;
+  kind: "daily" | "source_performance";
+  period_start: string;
+  period_end: string;
+  metrics: Record<string, unknown>;
+  narrative: string;
+  narrative_source: "ai" | "template";
+  validation: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  expires_at: string;
+  created_at: string;
+  link?: string;
+  emailed?: boolean;
+}
+
+export interface NotificationSettings {
+  alert_on_high: boolean;
+  daily_report: boolean;
+  weekly_report: boolean;
+  alert_email: string | null;
+}
+
+export interface ScorePreviewRow {
+  lead_id: string;
+  name: string;
+  old_score: number;
+  old_band: Priority;
+  new_score: number;
+  new_band: Priority;
+}
+
 export interface ScoringConfig {
   version: number;
   weights: Record<string, number>;
@@ -537,6 +602,69 @@ export const api = {
   analysis: (id: string) => request<LeadAnalysis>(`${lead(id)}/analysis`),
   reanalyze: (id: string) => request<unknown>(`${lead(id)}/reanalyze`, { method: "POST" }),
   scoring: () => request<ScoringConfig>("/api/v1/settings/scoring"),
+  analyticsSources: (days: number) =>
+    request<{ days: number; rows: SourceRow[] }>(`/api/v1/analytics/sources?days=${days}`),
+  analyticsFunnel: (days: number) => request<FunnelData>(`/api/v1/analytics/funnel?days=${days}`),
+  analyticsTeam: (days: number) =>
+    request<{ days: number; rows: TeamRow[] }>(`/api/v1/analytics/team?days=${days}`),
+  analyticsExportUrl: (days: number) => `/api/v1/analytics/export?days=${days}`,
+  reports: () => request<ReportSnapshot[]>("/api/v1/analytics/reports"),
+  makeReport: (kind: string) =>
+    request<ReportSnapshot>(`/api/v1/analytics/reports/${kind}`, { method: "POST" }),
+  invitations: () => request<Invitation[]>("/api/v1/org/invitations"),
+  invite: (email: string, role: string) =>
+    request<Invitation>("/api/v1/org/invitations", json({ email, role })),
+  revokeInvite: (id: string) =>
+    request<void>(`/api/v1/org/invitations/${id}`, { method: "DELETE" }),
+  invitationInfo: (token: string) =>
+    request<{ organization_name: string; email: string; role: string; has_account: boolean }>(
+      `/api/v1/auth/invitations/${encodeURIComponent(token)}`,
+    ),
+  acceptInvite: (token: string, full_name: string, password: string) =>
+    request<Me>(
+      `/api/v1/auth/invitations/${encodeURIComponent(token)}/accept`,
+      json({ full_name, password }),
+    ),
+  updateMember: (id: string, role: string) =>
+    request<Member>(`/api/v1/org/members/${id}`, send("PATCH", { role })),
+  removeMember: (id: string) => request<void>(`/api/v1/org/members/${id}`, { method: "DELETE" }),
+  addStage: (label: string, category: string) =>
+    request<Stage>("/api/v1/settings/pipeline", json({ label, category })),
+  updateStage: (id: string, body: { label?: string; position?: number }) =>
+    request<Stage>(`/api/v1/settings/pipeline/${id}`, send("PATCH", body)),
+  deleteStage: (id: string) =>
+    request<void>(`/api/v1/settings/pipeline/${id}`, { method: "DELETE" }),
+  notifications: () => request<NotificationSettings>("/api/v1/settings/notifications"),
+  saveNotifications: (body: NotificationSettings) =>
+    request<NotificationSettings>("/api/v1/settings/notifications", send("PUT", body)),
+  retention: () =>
+    request<{ erase_archived_after_days: number | null; due_for_erasure: number }>(
+      "/api/v1/settings/retention",
+    ),
+  saveRetention: (days: number | null) =>
+    request<{ erase_archived_after_days: number | null; due_for_erasure: number }>(
+      "/api/v1/settings/retention",
+      send("PUT", { erase_archived_after_days: days }),
+    ),
+  purgeArchived: () =>
+    request<{ erased: number }>("/api/v1/settings/retention/purge", { method: "POST" }),
+  followUpSettings: () =>
+    request<{
+      max_attempts: number;
+      cooldown_days: number;
+      timezone: string;
+      business_hours: string;
+    }>("/api/v1/settings/follow-ups"),
+  saveFollowUpSettings: (max_attempts: number, cooldown_days: number) =>
+    request<{ max_attempts: number; cooldown_days: number }>(
+      "/api/v1/settings/follow-ups",
+      send("PUT", { max_attempts, cooldown_days }),
+    ),
+  scoringPreview: (weights: Record<string, number>, thresholds: Record<string, number>) =>
+    request<{ rows: ScorePreviewRow[]; band_changes: number }>(
+      "/api/v1/settings/scoring/preview",
+      json({ weights, thresholds }),
+    ),
   followUps: (status: string) => request<FollowUpItem[]>(`/api/v1/follow-ups${query({ status })}`),
   prepareFollowUp: (id: string) =>
     request<{ status: string; reason?: string }>(`/api/v1/follow-ups/${id}/prepare`, {

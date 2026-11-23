@@ -7,12 +7,18 @@ import { type ReactNode, Suspense } from "react";
 const TABS = [
   ["/settings/scoring", "Lead scoring"],
   ["/settings/ai", "AI"],
+  ["/settings/team", "Team"],
+  ["/settings/pipeline", "Pipeline"],
+  ["/settings/rules", "Rules & data"],
 ] as const;
 
 function Tabs() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Settings sections" className="flex gap-2 border-b border-[#E3E6EF]">
+    <nav
+      aria-label="Settings sections"
+      className="flex gap-2 overflow-x-auto border-b border-[#E3E6EF]"
+    >
       {TABS.map(([href, label]) => {
         const active = pathname.startsWith(href);
         return (

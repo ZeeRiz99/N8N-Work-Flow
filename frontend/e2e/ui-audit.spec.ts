@@ -38,7 +38,9 @@ test("UI action audit: every page and control works without errors", async ({ pa
     ["Overview", "Overview"],
     ["Leads", "Leads"],
     ["Approvals", "Approvals"],
-    ["Duplicates", "Duplicates"],
+    ["Duplicates", "Possible duplicates"],
+    ["Follow-ups", "Follow-ups"],
+    ["Analytics", "Analytics"],
     ["AI Assistant", "AI Assistant"],
     ["Automation", "Automation"],
     ["Integrations", "Integrations"],
@@ -171,6 +173,25 @@ test("UI action audit: every page and control works without errors", async ({ pa
   await page.getByRole("link", { name: "AI", exact: true }).click();
   await btn(page, "Save").click();
   await expect(page.getByRole("status").filter({ hasText: "AI settings saved." })).toBeVisible();
+
+  // Analytics tabs and settings sections (P9)
+  await page.goto("/analytics");
+  for (const t of ["Funnel", "Team", "Reports", "Sources"]) {
+    await btn(page, t).click();
+  }
+  await btn(page, "1 year").click();
+  for (const [path, title] of [
+    ["/settings/team", "Team"],
+    ["/settings/pipeline", "Pipeline"],
+    ["/settings/rules", "Rules & data"],
+    ["/follow-ups", "Follow-ups"],
+  ]) {
+    await page.goto(path);
+    await expect(heading(page, title)).toBeVisible();
+  }
+  await page.goto("/settings/scoring");
+  await btn(page, "Preview on recent leads").click();
+  await expect(page.getByText(/recent leads would change priority/)).toBeVisible();
 
   // Log out
   await btn(page, "Log out").click();
