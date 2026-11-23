@@ -268,6 +268,46 @@
           "name": "RL Backend Service Key"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/notifications/log",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Request-ID",
+              "value": "={{ $('Lead created').item.json.body.request_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lead_id: $('Lead created').item.json.body.data.lead_id, channel: 'email', status: 'sent', n8n_execution_id: String($execution.id) }) }}"
+      },
+      "id": "a1b2c3d4-0000-4000-8000-000000000009",
+      "name": "Log alert (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1080,
+        -240
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
     }
   ],
   "connections": {
@@ -327,6 +367,11 @@
         [
           {
             "node": "Draft reply (backend)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log alert (backend)",
             "type": "main",
             "index": 0
           }

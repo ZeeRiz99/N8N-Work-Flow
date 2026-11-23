@@ -254,3 +254,49 @@ def log_workflow_error(err: WorkflowErrorIn, org: ServiceOrg, db: DbSession) -> 
         "Leads are safe: the backend keeps every lead and retries delivery."
     )
     return {"should_alert": should_alert, "subject": subject, "text": text}
+
+
+# ---------------------------------------------------------------- W3 notifications
+
+
+class NotificationLogIn(BaseModel):
+    lead_id: uuid.UUID | None = None
+    channel: Literal["email", "telegram"]
+    status: Literal["sent", "failed"]
+    n8n_execution_id: str | None = Field(default=None, max_length=40)
+    error: str | None = Field(default=None, max_length=500)
+
+
+@router.post("/notifications/log")
+def log_notification(n: NotificationLogIn, org: ServiceOrg, db: DbSession) -> dict:
+    """Record an alert on the lead's timeline. A failed alert never touches the lead's data; it
+    asks n8n to tell the admin (throttled like W9), so a broken Telegram bot is noticed."""
+    from app.services.activity import record
+
+    if n.lead_id is not None:
+        owned = db.scalar(
+            select(Lead.id).where(Lead.id == n.lead_id, Lead.organization_id == org.id)
+        )
+        if owned is None:
+            raise HTTPException(404, "Lead not found.")
+        record(
+            db,
+            org.id,
+            n.lead_id,
+            f"alert_{n.status}",
+            "workflow",
+            None,
+            channel=n.channel,
+            error=(n.error or "")[:200] or None,
+        )
+    db.commit()
+    if n.status == "sent":
+        return {"should_alert": False}
+    err = WorkflowErrorIn(
+        workflow_key=f"alert-{n.channel}",
+        workflow_name=f"High-priority alert via {n.channel}",
+        n8n_execution_id=n.n8n_execution_id or f"notif-{uuid.uuid4().hex[:12]}",
+        last_node=f"Send {n.channel}",
+        message=n.error or f"{n.channel} alert failed",
+    )
+    return log_workflow_error(err, org, db)

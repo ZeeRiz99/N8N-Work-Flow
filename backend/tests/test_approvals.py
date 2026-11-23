@@ -217,3 +217,30 @@ def test_workflow_error_alerts_are_throttled(client, db, owner):  # noqa: F811
     ).json()
     assert first["should_alert"] and not second["should_alert"] and other["should_alert"]
     assert "Leads are safe" in first["text"]
+
+
+def test_failed_telegram_alert_notifies_admin_and_leaves_lead_alone(client, db, owner):  # noqa: F811
+    key = _service_key_for(db, owner)
+    lead = new_lead(client, message=MSG)
+    before = client.get(f"/api/v1/leads/{lead['id']}").json()
+    body = {
+        "lead_id": lead["id"],
+        "channel": "telegram",
+        "status": "failed",
+        "error": "connect ETIMEDOUT api.telegram.org",
+        "n8n_execution_id": "77",
+    }
+    r = client.post("/api/v1/internal/notifications/log", json=body, headers=svc(key)).json()
+    assert r["should_alert"] is True and "telegram" in r["subject"].lower()
+    after = client.get(f"/api/v1/leads/{lead['id']}").json()
+    assert {k: after[k] for k in ("score", "priority", "stage")} == {
+        k: before[k] for k in ("score", "priority", "stage")
+    }
+    timeline = client.get(f"/api/v1/leads/{lead['id']}/activities").json()
+    assert any(a["type"] == "alert_failed" for a in timeline)
+    ok = client.post(
+        "/api/v1/internal/notifications/log",
+        json={**body, "status": "sent", "error": None},
+        headers=svc(key),
+    ).json()
+    assert ok == {"should_alert": False}

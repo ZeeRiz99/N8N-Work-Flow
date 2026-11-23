@@ -313,8 +313,94 @@ def build_w9():
     )
 
 
+def add_alert_log():
+    """W1: record the email alert on the lead's timeline (POST /internal/notifications/log)."""
+    path = HERE / "rl-w1-lead-intake.json"
+    w1 = json.loads(path.read_text(encoding="utf-8"))
+    if any(n["name"] == "Log alert (backend)" for n in w1["nodes"]):
+        return
+    lead = "$('Lead created').item.json.body"
+    node = http(
+        "a1b2c3d4-0000-4000-8000-000000000009",
+        "Log alert (backend)",
+        [1080, -240],
+        "=__BACKEND_URL__/api/v1/internal/notifications/log",
+        body=(
+            f"={{{{ JSON.stringify({{ lead_id: {lead}.data.lead_id, channel: 'email', "
+            "status: 'sent', n8n_execution_id: String($execution.id) }) }}"
+        ),
+        headers=[("X-Request-ID", f"={{{{ {lead}.request_id }}}}")],
+    )
+    w1["nodes"].append(node)
+    w1["connections"]["Email the team"]["main"][0].append(
+        {"node": "Log alert (backend)", "type": "main", "index": 0}
+    )
+    save(path.name, w1)
+
+
+TELEGRAM = {"telegramApi": {"id": "rlCredTelegram01", "name": "RL Telegram Bot"}}
+
+
+def add_telegram():
+    """Only when the Telegram bot credential exists (python build_p6_workflows.py --telegram):
+    W1 sends the alert to Telegram; on failure it falls back to email and logs the failure,
+    which makes the backend alert the admin (the lead is never affected)."""
+    path = HERE / "rl-w1-lead-intake.json"
+    w1 = json.loads(path.read_text(encoding="utf-8"))
+    if any(n["name"] == "Telegram the team" for n in w1["nodes"]):
+        return
+    lead = "$('Lead created').item.json.body"
+    tg = {
+        "parameters": {
+            "chatId": "__TELEGRAM_CHAT_ID__",
+            "text": "={{ $('Alert summary (backend)').item.json.text }}",
+            "additionalFields": {"appendAttribution": False, "disable_web_page_preview": True},
+        },
+        "id": "a1b2c3d4-0000-4000-8000-000000000010",
+        "name": "Telegram the team",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [960, -360],
+        "webhookId": "5f3e2a10-6d2b-4c1a-9e7f-0000000000tg",
+        "credentials": TELEGRAM,
+        "onError": "continueErrorOutput",
+    }
+    failed = http(
+        "a1b2c3d4-0000-4000-8000-000000000011",
+        "Log Telegram failure (backend)",
+        [1200, -360],
+        "=__BACKEND_URL__/api/v1/internal/notifications/log",
+        body=(
+            f"={{{{ JSON.stringify({{ lead_id: {lead}.data.lead_id, channel: 'telegram', "
+            "status: 'failed', n8n_execution_id: String($execution.id), "
+            "error: String(($json.error && ($json.error.message || $json.error)) || "
+            "'Telegram failed').slice(0, 480) }) }}"
+        ),
+    )
+    w1["nodes"] += [tg, failed]
+    # Alert summary -> Telegram (ok: done) | (error: log failure + email fallback)
+    w1["connections"]["Alert summary (backend)"]["main"][0] = [
+        {"node": "Telegram the team", "type": "main", "index": 0}
+    ]
+    w1["connections"]["Telegram the team"] = {
+        "main": [
+            [{"node": "Draft reply (backend)", "type": "main", "index": 0}],
+            [
+                {"node": "Log Telegram failure (backend)", "type": "main", "index": 0},
+                {"node": "Email the team", "type": "main", "index": 0},
+            ],
+        ]
+    }
+    save(path.name, w1)
+
+
 if __name__ == "__main__":
+    import sys
+
     build_w1()
+    add_alert_log()
+    if "--telegram" in sys.argv:
+        add_telegram()
     build_w4b()
     build_w9()
     print("built W1, W4b, W9")
