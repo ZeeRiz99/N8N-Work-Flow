@@ -87,10 +87,12 @@ def automation_overview(user: UserDep, db: DbSession) -> dict:
             "label": "Leads analyzed",
             # Distinct leads: re-analyses and re-scores are not new work for the journey.
             "count": db.scalar(
-                select(func.count(func.distinct(LeadActivity.lead_id))).where(
+                select(func.count(func.distinct(LeadActivity.lead_id)))
+                .join(Lead, Lead.id == LeadActivity.lead_id)
+                .where(
                     LeadActivity.organization_id == org,
                     LeadActivity.type == "scored",
-                    LeadActivity.created_at >= since,
+                    Lead.created_at >= since,  # same leads as "New inquiries"
                 )
             )
             or 0,

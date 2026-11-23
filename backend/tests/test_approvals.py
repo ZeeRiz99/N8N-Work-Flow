@@ -244,3 +244,22 @@ def test_failed_telegram_alert_notifies_admin_and_leaves_lead_alone(client, db, 
         headers=svc(key),
     ).json()
     assert ok == {"should_alert": False}
+
+
+def test_contract_fixtures_match_the_real_shapes(client, db, owner):  # noqa: F811
+    import json as _json
+
+    from app.services.leads import _event_envelope
+
+    folder = Path(__file__).resolve().parents[2] / "contracts" / "internal-api"
+    fx = {p.name: _json.loads(p.read_text(encoding="utf-8")) for p in folder.glob("*.json")}
+    real = _event_envelope("draft.approved", uuid.uuid4(), {"draft_id": "x", "lead_id": "y"})
+    assert set(real) == set(fx["event-draft-approved.json"])
+    assert set(real["data"]) == set(fx["event-draft-approved.json"]["data"])
+    key = _service_key_for(db, owner)
+    _, d = queued(client)
+    client.post(f"/api/v1/drafts/{d['id']}/approve")
+    claim = client.post(f"/api/v1/internal/drafts/{d['id']}/claim-send", headers=svc(key)).json()
+    assert set(claim) == set(fx["response-claim-send-200.json"])
+    again = client.post(f"/api/v1/internal/drafts/{d['id']}/claim-send", headers=svc(key)).json()
+    assert set(again["error"]) >= {"code", "message"}

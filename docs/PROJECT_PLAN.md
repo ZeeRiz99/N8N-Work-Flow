@@ -17,8 +17,8 @@ Rhythm: 1 phase = 1 branch = 1 pull request = 1 verified increment. Details per 
 
 ## M1 Working MVP
 - [x] P4 Auth, organizations, CRM core (PR #3, 2026-11-23)
-- [ ] P5 AI intelligence (Gemini first; scoring, grounding, evals): built; live Gemini eval report and PR pending
-- [ ] P6 n8n MVP automation, Telegram, approvals
+- [x] P5 AI intelligence (Gemini first; scoring, grounding, evals)
+- [x] P6 n8n MVP automation, approvals (Telegram branch ready; bot pending)
 - [ ] P7 MVP gate and demo readiness (`v0.1.0-mvp`)
 
 ## M2 Professional SaaS

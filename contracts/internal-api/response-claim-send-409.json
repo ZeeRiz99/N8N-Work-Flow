@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "conflict",
+    "message": "Draft is not approved or is already being sent.",
+    "request_id": "req-example-3"
+  }
+}

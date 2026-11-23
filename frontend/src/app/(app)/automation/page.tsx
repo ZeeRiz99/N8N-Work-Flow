@@ -221,9 +221,11 @@ export default function AutomationPage() {
                           ? "Same event delivered again; handled once, nothing repeated."
                           : r.meta.result === "sent"
                             ? "Approved email sent."
-                            : r.meta.band
-                              ? `Scored ${String(r.meta.score)}, ${String(r.meta.band)}${r.meta.draft_id ? "; draft written" : ""}`
-                              : "Done."}
+                            : r.meta.result === "failed"
+                              ? "Email could not be sent (mail server refused). Marked failed; it is not retried by itself."
+                              : r.meta.band
+                                ? `Scored ${String(r.meta.score)}, ${String(r.meta.band)}${r.meta.draft_id ? "; draft written" : ""}`
+                                : "Done."}
                       {r.lead_id && (
                         <>
                           {" "}

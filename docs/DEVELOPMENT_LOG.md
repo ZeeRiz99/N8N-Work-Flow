@@ -2,6 +2,15 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-23: Phase 6 (automation, approvals, sending)
+
+- **Draft lifecycle:** `communication_drafts`, `communication_logs`, `follow_ups`. Drafts are saved as `pending_approval` (one open draft per lead and kind); edits rerun the checks; approval reruns checks and contactability, writes an audit row and emits `draft.approved`; rejection needs a reason. The send path is a single atomic claim (`approved → sending`), proven by behavioural tests and a static guard ("no code path sends unless approved").
+- **n8n:** W1 now writes a reply draft after analysis and logs its alerts; W4b claims, sends by SMTP (Mailpit), and reports sent (message id, follow-up in 3 days) or failed; W9 logs failures and emails the admin when the backend says `should_alert` (one per workflow per 10 minutes). Telegram branch ready behind `build_p6_workflows.py --telegram` (bot pending).
+- **UI:** Approvals screen (queue by score, lead context, read-only recipient, locked opt-out footer, live checks, reject with reason, Ctrl+Enter, J/K), lead drafts go to the queue, Automation Center v1 (journey, workflow cards, outbox health, runs in plain words), Integrations v1 with Test connection.
+- **Verified:** `smoke.ps1` 17/17 (form to Mailpit, redelivery of both events creates nothing new); `failure-injection.ps1` 13/13 (n8n stopped: lead kept and processed after recovery; SMTP down: draft failed, never re-sent); 262 backend tests; Playwright journey.
+- **Fixed on the way:** `.env` `AI_PROVIDER` held its comment (no space before `#`), so exact checks failed; the setting now keeps only the first word.
+- **Deviations / limits:** W2/W3/W4 run inline in W1 (backlog #36); one org-scoped n8n service key (#38); smoke approves through the service layer (#37).
+
 ## 2026-11-23: Phase 5 (AI intelligence), build complete; first live eval report committed
 
 - **Pipeline:** guard (NFKC, invisible characters, 4,000-char cut, injection tripwires) → prompt `analysis-v1` (customer text as a tagged data block) → Gemini structured output → grounding (every fact needs a real quote; budgets re-parsed by code) → deterministic 7-factor scoring with per-org versioned weights → `lead_analyses` + `lead_scores` history. Cache by input hash and provider.
