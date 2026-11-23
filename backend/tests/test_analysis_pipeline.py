@@ -216,3 +216,28 @@ def test_retry_gives_up_after_max_attempts(db, org, catalog, monkeypatch):
         analysis.analyze_lead(db, org.id, lead.id, force=True)
     far = datetime.now(UTC) + timedelta(days=2)
     assert analysis.due_for_retry(db, far) == []
+
+
+def test_stuck_lead_is_requeued_once_its_event_was_delivered(db, org, catalog):
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import OutboxEvent
+    from app.services.leads import _event_envelope
+
+    lead = make_lead(db, org)
+    lead.ai_status = "pending"
+    ev = OutboxEvent(
+        organization_id=org.id,
+        event_type="lead.created",
+        status="delivered",
+        payload=_event_envelope("lead.created", org.id, {"lead_id": str(lead.id)}),
+    )
+    db.add(ev)
+    db.flush()
+    later = datetime.now(UTC) + timedelta(minutes=5)
+    assert analysis.requeue_stuck_leads(db, datetime.now(UTC)) == 0  # too recent
+    assert analysis.requeue_stuck_leads(db, later) == 1
+    assert analysis.requeue_stuck_leads(db, later) == 0  # new event not delivered yet
+    events = db.scalars(select(OutboxEvent).where(OutboxEvent.event_type == "lead.created")).all()
+    assert len(events) == 2 and events[-1].payload["data"]["requeued"] is True
+    assert events[-1].payload["event_id"] != events[0].payload["event_id"]

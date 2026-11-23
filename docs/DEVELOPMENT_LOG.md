@@ -2,6 +2,16 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-23: Phase 7 (MVP gate and demo readiness): v0.1.0-mvp
+
+- **Gate:** the 16-step journey passed **3 of 3 runs, each from a freshly created database** (`scripts/journey.ps1`: Playwright steps 1-15, then the backend is killed mid-flow and restarted). UI action audit: every row passes (`docs/UI_ACTION_AUDIT.md`, `scripts/ui-audit.ps1` with zero console or server errors). CI green. Pending: the developer's live demo rehearsal (`docs/DEMO_SCRIPT.md`).
+- **Found by the gate and fixed:** a lead stayed "pending" forever when n8n called back while the backend was down. The backend now re-sends the intake event for stuck leads (max 3) at startup and every 30 s.
+- **Overview dashboard:** stat cards (new leads with change, high priority, waiting for approval, median time to first reply vs target), new-leads-per-day chart (validated colour, hover, table view), priority mix, pipeline, latest leads with next step, automation strip; `/analytics/overview` and `/analytics/trends` (numbers reconciled with SQL in tests).
+- **Demo data:** `scripts/seed.ps1` (152 fictional leads over 60 days, reply history, 2 near-duplicates); `create-owner` dev command.
+- **Bug bash:** on phones the sidebar stacked above every page; it is now a drawer (Menu button, Escape, closes on navigation). Chart edge labels were clipped; fixed.
+- **Performance:** API p95 under 60 ms on 163 leads (Automation overview 104 ms with its live n8n check); pages under ~1 s at phone width (`docs/PERFORMANCE.md`).
+- README v1, demo script, P7 screenshots. Tests: 266 backend.
+
 ## 2026-11-23: Phase 6 (automation, approvals, sending)
 
 - **Draft lifecycle:** `communication_drafts`, `communication_logs`, `follow_ups`. Drafts are saved as `pending_approval` (one open draft per lead and kind); edits rerun the checks; approval reruns checks and contactability, writes an audit row and emits `draft.approved`; rejection needs a reason. The send path is a single atomic claim (`approved → sending`), proven by behavioural tests and a static guard ("no code path sends unless approved").

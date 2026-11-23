@@ -461,6 +461,60 @@ def retry_failed(db: Session, now: datetime | None = None) -> int:
     return ok
 
 
+STUCK_AFTER_SECONDS = 45
+MAX_INTAKE_EVENTS = 3
+
+
+def requeue_stuck_leads(db: Session, now: datetime | None = None) -> int:
+    """Leads still pending/processing well after their event was delivered: n8n called back
+    while the backend was down (or a run died). Re-send the intake event through the outbox
+    (a new event id, so the idempotency keys allow it), at most 3 events per lead (§12.5 #16:
+    killing the backend mid-flow loses nothing)."""
+    from datetime import timedelta
+
+    from app.models import OutboxEvent
+    from app.services.leads import _event_envelope
+
+    now = now or datetime.now(UTC)
+    cutoff = now - timedelta(seconds=STUCK_AFTER_SECONDS)
+    leads = db.scalars(
+        select(Lead)
+        .where(
+            Lead.ai_status.in_(("pending", "processing")),
+            Lead.updated_at < cutoff,
+            Lead.archived_at.is_(None),
+        )
+        .limit(50)
+    ).all()
+    requeued = 0
+    for lead in leads:
+        events = db.scalars(
+            select(OutboxEvent).where(
+                OutboxEvent.event_type == "lead.created",
+                OutboxEvent.payload["data"]["lead_id"].astext == str(lead.id),
+            )
+        ).all()
+        if not events or len(events) >= MAX_INTAKE_EVENTS:
+            continue  # never emitted (manual lead without message) or out of attempts
+        if any(e.status != "delivered" or e.created_at > cutoff for e in events):
+            continue  # a delivery is still on its way
+        data = dict(events[-1].payload.get("data", {}))
+        data["requeued"] = True
+        db.add(
+            OutboxEvent(
+                organization_id=lead.organization_id,
+                event_type="lead.created",
+                payload=_event_envelope("lead.created", lead.organization_id, data),
+            )
+        )
+        record(
+            db, lead.organization_id, lead.id, "intake_requeued", "system", attempt=len(events) + 1
+        )
+        requeued += 1
+    db.commit()
+    return requeued
+
+
 class AIRetryWorker:
     """Background thread: every few minutes, retries failed analyses that are due."""
 
@@ -479,11 +533,16 @@ class AIRetryWorker:
         self._thread.join(timeout=5)
 
     def _run(self) -> None:
-        while not self._stop.wait(self._poll):
+        first = True
+        # Run once right away (a restart after a crash is exactly when leads are stuck),
+        # then every poll interval.
+        while first or not self._stop.wait(self._poll):
+            first = False
             try:
                 with self._factory() as db:
+                    stuck = requeue_stuck_leads(db)
                     n = retry_failed(db)
-                    if n:
-                        log.info("ai_retry recovered=%s", n)
+                    if n or stuck:
+                        log.info("ai_retry recovered=%s requeued_stuck=%s", n, stuck)
             except Exception:  # noqa: BLE001 - never let the worker die
                 log.exception("ai retry loop error")

@@ -57,6 +57,46 @@ FIRST = [
     "Elif",
     "Kwame",
     "Ingrid",
+    "Aarav",
+    "Beatriz",
+    "Caleb",
+    "Dalia",
+    "Emre",
+    "Farah",
+    "Gabriel",
+    "Hana",
+    "Isaac",
+    "Jana",
+    "Karim",
+    "Lina",
+    "Mateo",
+    "Nadia",
+    "Oscar",
+    "Paula",
+    "Rafael",
+    "Saanvi",
+    "Theo",
+    "Uma",
+    "Valentina",
+    "Wei",
+    "Yara",
+    "Zain",
+    "Amara",
+    "Bruno",
+    "Clara",
+    "Dev",
+    "Esme",
+    "Felix",
+    "Greta",
+    "Hugo",
+    "Iris",
+    "Jonah",
+    "Kira",
+    "Luca",
+    "Maya",
+    "Nico",
+    "Olga",
+    "Pablo",
 ]
 LAST = [
     "Hassan",
@@ -97,6 +137,54 @@ LAST = [
     "Wong",
     "Rivera",
     "Yilmaz",
+    "Brennan",
+    "Castillo",
+    "Dubois",
+    "Eriksen",
+    "Fontaine",
+    "Gallagher",
+    "Haddad",
+    "Ivanova",
+    "Jansen",
+    "Kowalski",
+    "Lindqvist",
+    "Moreau",
+    "Nakamura",
+    "Oyelaran",
+    "Petrov",
+    "Quinlan",
+    "Rasmussen",
+    "Sorensen",
+    "Takahashi",
+    "Underwood",
+    "Valdez",
+    "Whitaker",
+    "Xu",
+    "Yamada",
+    "Zielinski",
+    "Abernathy",
+    "Bhatt",
+    "Chaudhry",
+    "Delgado",
+    "Esposito",
+    "Farouk",
+    "Gutierrez",
+    "Holm",
+    "Ibrahim",
+    "Jovanovic",
+    "Kaur",
+    "Lombardi",
+    "Mbeki",
+    "Nwosu",
+    "Okonkwo",
+    "Pereira",
+    "Rahman",
+    "Santos",
+    "Tanaka",
+    "Ueda",
+    "Vasquez",
+    "Weber",
+    "Zhou",
 ]
 BUSINESSES = [
     ("Bakery", "bakery"),
@@ -219,6 +307,43 @@ def _message(rng: random.Random, business: str) -> tuple[str, dict]:
     return " ".join(p for p in parts if p), form
 
 
+def _reply_history(db, org_id: uuid.UUID, lead: Lead, rng: random.Random) -> None:
+    """A sent first reply (fictional), so reply-time metrics have data: answered 20 minutes to
+    a day and a half after the inquiry."""
+    from app.models import CommunicationDraft, CommunicationLog
+
+    sent_at = lead.first_inquiry_at + timedelta(
+        minutes=rng.choice([20, 45, 75, 110, 180, 420, 960, 1500, 2100])
+    )
+    draft = CommunicationDraft(
+        organization_id=org_id,
+        lead_id=lead.id,
+        to_address=lead.email,
+        subject=f"Re: your inquiry, {lead.full_name.split()[0]}",
+        body="(sample reply)",
+        style="professional",
+        status="sent",
+        source="template",
+        sent_at=sent_at,
+        approved_at=sent_at,
+    )
+    db.add(draft)
+    db.flush()
+    db.add(
+        CommunicationLog(
+            organization_id=org_id,
+            lead_id=lead.id,
+            draft_id=draft.id,
+            direction="out",
+            channel="email",
+            provider="smtp",
+            status="sent",
+            provider_message_id=f"<sample-{draft.id.hex[:12]}@example.com>",
+            occurred_at=sent_at,
+        )
+    )
+
+
 def clear(db, org_id: uuid.UUID) -> int:
     ids = db.scalars(
         select(Lead.id).where(
@@ -238,6 +363,7 @@ def load(
     provider=None,
     seed: int | None = None,
     author_id: uuid.UUID | None = None,
+    days: int = 45,
 ) -> dict:
     """Create `count` sample leads in `org`, analyze them, and spread them over the pipeline.
     provider: an AIProvider for scoring (default: the offline FakeAIProvider, so no quota is
@@ -297,7 +423,7 @@ def load(
         )
         lead = res.lead
         lead.custom_fields = {**(lead.custom_fields or {}), "sample": True}
-        when = now - timedelta(days=rng.uniform(0, 45), hours=rng.uniform(0, 23))
+        when = now - timedelta(days=rng.uniform(0, days), hours=rng.uniform(0, 23))
         lead.created_at = lead.first_inquiry_at = lead.last_interaction_at = when
         inq = db.scalar(select(LeadInquiry).where(LeadInquiry.lead_id == lead.id))
         if inq is not None:
@@ -330,11 +456,14 @@ def load(
     # Spread over the pipeline (after analysis, which moves New -> AI processed).
     keys = [k for k, _ in STAGE_WEIGHTS if k in stages]
     weights = [w for k, w in STAGE_WEIGHTS if k in stages]
+    replied = {"contacted", "meeting_scheduled", "proposal_sent", "won", "lost"}
     for lead in created:
         key = rng.choices(keys, weights)[0]
         lead.stage_id = stages[key]
         if rng.random() < 0.25:
             crm.add_note(db, org.id, lead, rng.choice(NOTES), author_id)
+        if key in replied and lead.email:
+            _reply_history(db, org.id, lead, rng)
     db.commit()
     found = duplicates.scan(db, org.id)
     return {"leads": len(created), "duplicate_pairs": found}

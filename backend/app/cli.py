@@ -320,6 +320,7 @@ def sample_data() -> int:
     who.add_argument("--org", help="organization slug")
     who.add_argument("--all", action="store_true", help="every organization")
     ap.add_argument("--count", type=int, default=40)
+    ap.add_argument("--days", type=int, default=45, help="spread leads over this many days")
     ap.add_argument("--clear", action="store_true", help="remove sample leads instead")
     ap.add_argument(
         "--ai",
@@ -361,11 +362,49 @@ def sample_data() -> int:
             if args.clear:
                 print(f"{org.slug}: removed {sd.clear(db, org.id)} sample leads.")
             else:
-                out = sd.load(db, org, args.count, provider, author_id=author)
+                out = sd.load(db, org, args.count, provider, author_id=author, days=args.days)
                 print(
                     f"{org.slug}: added {out['leads']} sample leads, "
                     f"{out['duplicate_pairs']} duplicate pairs to review."
                 )
+    return 0
+
+
+def create_owner() -> int:
+    """Development and tests only: create or reset an owner login with a password read from a
+    file (never from the command line). Usage: create-owner <org-slug> <email> <password-file>"""
+    from pathlib import Path
+
+    from app.models import OrganizationMember, User
+    from app.services.auth import hash_password
+
+    if get_settings().app_env != "development":
+        print("create-owner is only available in development.")
+        return 1
+    if len(sys.argv) < 5:
+        print("Usage: create-owner <org-slug> <email> <password-file>")
+        return 2
+    slug, email, pw_file = sys.argv[2], sys.argv[3], Path(sys.argv[4])
+    password = pw_file.read_text(encoding="utf-8").strip()
+    with get_session_factory()() as db:
+        org = db.scalar(select(Organization).where(Organization.slug == slug))
+        if org is None:
+            print(f"No organization '{slug}'.")
+            return 1
+        user = db.scalar(select(User).where(User.email == email))
+        if user is None:
+            user = User(email=email, full_name="Jordan Lee")
+            db.add(user)
+        user.password_hash = hash_password(password)
+        db.flush()
+        if not db.scalar(
+            select(OrganizationMember).where(
+                OrganizationMember.organization_id == org.id, OrganizationMember.user_id == user.id
+            )
+        ):
+            db.add(OrganizationMember(organization_id=org.id, user_id=user.id, role="owner"))
+        db.commit()
+    print(f"Owner {email} ready in {slug}.")
     return 0
 
 
@@ -374,6 +413,7 @@ COMMANDS = {
     "set-demo-owner": set_demo_owner,
     "seed-portfolio": seed_portfolio,
     "sample-data": sample_data,
+    "create-owner": create_owner,
 }
 
 if __name__ == "__main__":

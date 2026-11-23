@@ -82,7 +82,7 @@ class Settings(BaseSettings):
     n8n_editor_url: str = "http://localhost:5678"
     telegram_bot_token: str = Field(default="", repr=False)
     ai_retry_enabled: bool = True  # retry failed analyses with backoff (never drop a lead)
-    ai_retry_poll_seconds: float = 60.0
+    ai_retry_poll_seconds: float = 30.0
 
     @property
     def gemini_models(self) -> tuple[str, str]:
