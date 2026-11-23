@@ -9,7 +9,11 @@ import { UserMenu } from "@/components/session";
 // Sidebar from docs/design (master prompt §10.3). Screens not built yet are labelled "Soon"
 // instead of linking to an empty page (every control works or says it is coming).
 const NAV: { label: string; href?: string; icon: ReactNode }[] = [
-  { label: "Overview", icon: <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" /> },
+  {
+    label: "Overview",
+    href: "/overview",
+    icon: <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" />,
+  },
   {
     label: "Leads",
     href: "/leads",

@@ -243,6 +243,38 @@ export interface Integration {
   detail: string;
 }
 
+export interface OverviewData {
+  days: number;
+  cards: {
+    new_leads: number;
+    new_leads_previous: number;
+    high_priority: number;
+    awaiting_approval: number;
+    median_first_reply_minutes: number | null;
+    answered_leads: number;
+    reply_target_minutes: number;
+  };
+  priority_mix: { priority: Priority; count: number; share: number }[];
+  stages: { label: string; category: string; count: number }[];
+  automation_week: { runs: number; emails_sent: number; alerts: number };
+  latest: {
+    id: string;
+    full_name: string;
+    company: string | null;
+    priority: Priority;
+    score: number | null;
+    ai_status: string;
+    next_step: string;
+    last_interaction_at: string;
+  }[];
+}
+
+export interface TrendPoint {
+  date: string;
+  leads: number;
+  high: number;
+}
+
 export interface ScoringConfig {
   version: number;
   weights: Record<string, number>;
@@ -471,6 +503,9 @@ export const api = {
   analysis: (id: string) => request<LeadAnalysis>(`${lead(id)}/analysis`),
   reanalyze: (id: string) => request<unknown>(`${lead(id)}/reanalyze`, { method: "POST" }),
   scoring: () => request<ScoringConfig>("/api/v1/settings/scoring"),
+  overview: (days: number) => request<OverviewData>(`/api/v1/analytics/overview?days=${days}`),
+  trends: (days: number) =>
+    request<{ days: number; series: TrendPoint[] }>(`/api/v1/analytics/trends?days=${days}`),
   automation: () => request<AutomationOverview>("/api/v1/automation/overview"),
   redispatch: () =>
     request<{ requeued: number }>("/api/v1/automation/outbox/redispatch", { method: "POST" }),

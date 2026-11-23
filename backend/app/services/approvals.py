@@ -213,6 +213,7 @@ def mark_sent(
     lead = db.get(Lead, draft.lead_id)
     if lead is not None:
         lead.last_interaction_at = now
+        lead.next_follow_up_at = now + timedelta(days=FOLLOW_UP_DAYS)
     # Basic follow-up scheduling (P6): due in 3 days; full eligibility rules arrive in P8.
     db.add(
         FollowUp(
