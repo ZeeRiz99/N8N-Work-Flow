@@ -17,7 +17,7 @@ from app.models import OutboxEvent
 
 logger = logging.getLogger("replyline.outbox")
 
-WEBHOOK_PATHS = {"lead.created": "lead-created"}
+WEBHOOK_PATHS = {"lead.created": "lead-created", "draft.approved": "draft-approved"}
 BACKOFF_BASE_SECONDS = 15
 BACKOFF_CAP_SECONDS = 600
 

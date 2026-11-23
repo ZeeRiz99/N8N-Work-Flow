@@ -43,6 +43,20 @@ function describe(a: Activity): string {
       return `Scored ${p.score}, ${p.band} priority${p.provisional ? " (provisional)" : ""}`;
     case "reanalysis_requested":
       return "Re-analysis requested";
+    case "draft_approved":
+      return "Reply approved";
+    case "draft_rejected":
+      return `Reply rejected (${p.reason ?? "no reason"})`;
+    case "draft_edited":
+      return "Reply draft edited";
+    case "email_sent":
+      return `Email sent: ${p.subject ?? ""}`;
+    case "email_failed":
+      return "Email could not be sent";
+    case "alert_sent":
+      return `Team alerted (${p.channel})`;
+    case "alert_failed":
+      return `Alert failed (${p.channel}); admin notified`;
     case "question_asked":
       return "Question asked about this lead";
     case "follow_up_drafted":

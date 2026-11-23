@@ -183,6 +183,66 @@ export interface AISettings {
   model: string;
 }
 
+export interface SavedDraft {
+  id: string;
+  lead_id: string;
+  lead_name: string | null;
+  lead_company: string | null;
+  lead_score: number | null;
+  lead_priority: Priority | null;
+  kind: "first_reply" | "follow_up";
+  to: string | null;
+  subject: string;
+  body: string;
+  style: string;
+  status: string;
+  checks: DraftCheck[];
+  all_passed: boolean;
+  source: string;
+  model: string | null;
+  edited: boolean;
+  rejection_reason: string | null;
+  send_error: string | null;
+  created_at: string;
+  approved_at: string | null;
+  sent_at: string | null;
+  note?: string | null;
+}
+
+export interface AutomationOverview {
+  n8n: { ok: boolean; detail: string; editor_url: string };
+  workflows: {
+    key: string;
+    name: string;
+    purpose: string;
+    runs_7d: number;
+    success_7d: number;
+    skipped_7d: number;
+    failed_7d: number;
+    last_status: string | null;
+    last_run_at: string | null;
+  }[];
+  journey: { key: string; label: string; count: number }[];
+  outbox: { pending: number; failed: number };
+  recent: {
+    workflow_key: string;
+    status: string;
+    n8n_execution_id: string;
+    request_id: string | null;
+    lead_id: string | null;
+    error: string | null;
+    meta: Record<string, string | number | boolean | null>;
+    created_at: string;
+  }[];
+}
+
+export interface Integration {
+  kind: string;
+  name: string;
+  configured: boolean;
+  detail: string;
+}
+
 export interface ScoringConfig {
   version: number;
   weights: Record<string, number>;
@@ -411,6 +471,24 @@ export const api = {
   analysis: (id: string) => request<LeadAnalysis>(`${lead(id)}/analysis`),
   reanalyze: (id: string) => request<unknown>(`${lead(id)}/reanalyze`, { method: "POST" }),
   scoring: () => request<ScoringConfig>("/api/v1/settings/scoring"),
+  automation: () => request<AutomationOverview>("/api/v1/automation/overview"),
+  redispatch: () =>
+    request<{ requeued: number }>("/api/v1/automation/outbox/redispatch", { method: "POST" }),
+  integrations: () => request<Integration[]>("/api/v1/integrations"),
+  testIntegration: (kind: string) =>
+    request<{ ok: boolean; detail: string }>(`/api/v1/integrations/${kind}/test`, {
+      method: "POST",
+    }),
+  drafts: (status = "pending_approval", leadId?: string) =>
+    request<SavedDraft[]>(`/api/v1/drafts${query({ status, lead_id: leadId })}`),
+  saveDraft: (id: string, kind = "first_reply", style: string | null = null) =>
+    request<SavedDraft>(`${lead(id)}/drafts`, json({ kind, style })),
+  editDraft: (id: string, subject: string, body: string) =>
+    request<SavedDraft>(`/api/v1/drafts/${id}`, send("PATCH", { subject, body })),
+  approveDraft: (id: string) =>
+    request<SavedDraft>(`/api/v1/drafts/${id}/approve`, { method: "POST" }),
+  rejectDraft: (id: string, reason: string) =>
+    request<SavedDraft>(`/api/v1/drafts/${id}/reject`, json({ reason })),
   rescore: () =>
     request<{ changed: number; version: number }>("/api/v1/settings/scoring/rescore", {
       method: "POST",

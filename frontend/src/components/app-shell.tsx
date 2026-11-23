@@ -22,6 +22,7 @@ const NAV: { label: string; href?: string; icon: ReactNode }[] = [
   },
   {
     label: "Approvals",
+    href: "/approvals",
     icon: (
       <>
         <circle cx="12" cy="12" r="9" />
@@ -46,6 +47,7 @@ const NAV: { label: string; href?: string; icon: ReactNode }[] = [
   { label: "AI Assistant", href: "/assistant", icon: <path d="M4 5h16v11H9l-5 4z" /> },
   {
     label: "Automation",
+    href: "/automation",
     icon: (
       <>
         <circle cx="6" cy="6" r="2.5" />
@@ -56,6 +58,11 @@ const NAV: { label: string; href?: string; icon: ReactNode }[] = [
     ),
   },
   { label: "Analytics", icon: <path d="M5 20v-9M12 20V5M19 20v-6" /> },
+  {
+    label: "Integrations",
+    href: "/integrations",
+    icon: <path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0zM12 16v5" />,
+  },
   {
     label: "Settings",
     href: "/settings",

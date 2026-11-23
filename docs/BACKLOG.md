@@ -61,3 +61,11 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | 33 | The playground shows "None found" when the AI is unavailable (no facts without the model) | `/assistant` | Optionally show the offline keyword view, clearly labelled |
 | 34 | Sample-data names use simple combinations; a twin's typo is "a" doubled, which looks odd ("Hinaa") | `services/sample_data.py` | Use a small typo list (swap, drop a letter) |
 | 35 | Live Gemini eval covers 14 of 40 cases (budget-limited); the rest resume from the cache on later days | `evals/` | Run `run_eval.py --provider gemini` (no sample) over the next days until complete |
+
+## From Phase 6
+
+| # | Limit | Where | Fix later |
+|---|---|---|---|
+| 36 | W1 runs analyze, alert and draft inline instead of calling W2/W3/W4 sub-workflows (§9.3) | `n8n/workflows/rl-w1-lead-intake.json` | Split into Execute-Workflow sub-workflows once n8n workflow ids are pinned in the import script |
+| 37 | The smoke test approves through the service layer (no browser login in the script) | `scripts/smoke.ps1` | Approve through the API with a smoke user, or via Playwright |
+| 38 | n8n holds one service key, scoped to one organization; approved drafts in other organizations are never claimed for sending (claim-send is org-scoped) | `api/deps.py`, n8n credentials | Platform service key (scope `internal:any-org`) that resolves the org from the draft or lead id; or one n8n credential per org |

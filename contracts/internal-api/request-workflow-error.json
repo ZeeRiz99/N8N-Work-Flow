@@ -1,0 +1,7 @@
+{
+  "workflow_key": "W4b",
+  "workflow_name": "RL | W4b | Send Approved Draft",
+  "n8n_execution_id": "1234",
+  "last_node": "Send email",
+  "message": "getaddrinfo EAI_AGAIN mailpit"
+}

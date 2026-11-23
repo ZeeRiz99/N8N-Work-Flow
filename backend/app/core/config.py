@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -59,6 +59,14 @@ class Settings(BaseSettings):
 
     # AI (ADR 004: Gemini only). "fake" runs the offline deterministic provider (tests, CI).
     ai_provider: str = "gemini"
+
+    @field_validator("ai_provider", mode="before")
+    @classmethod
+    def _provider_word(cls, v: str) -> str:
+        """Keep only the first word: a .env comment without a space before '#' would
+        otherwise become part of the value ("gemini# comment")."""
+        return str(v).split("#")[0].strip().lower() or "gemini"
+
     gemini_api_key: str = Field(default="", repr=False)
     gemini_model: str = ""
     gemini_model_fallback: str = ""
@@ -67,6 +75,12 @@ class Settings(BaseSettings):
     # All Gemini requests on this machine per quota day (midnight Pacific), retries included.
     # Kept under the free tier's daily quota so it is never exhausted (ADR 011).
     gemini_daily_budget: int = 18
+
+    # Integrations page ("Test connection"); the backend runs on the host, so Mailpit is local.
+    smtp_test_host: str = "127.0.0.1"
+    smtp_test_port: int = 1025
+    n8n_editor_url: str = "http://localhost:5678"
+    telegram_bot_token: str = Field(default="", repr=False)
     ai_retry_enabled: bool = True  # retry failed analyses with backoff (never drop a lead)
     ai_retry_poll_seconds: float = 60.0
 

@@ -1,0 +1,5 @@
+{
+  "should_alert": true,
+  "subject": "Replyline automation failed: RL | W4b | Send Approved Draft",
+  "text": "Workflow: RL | W4b | Send Approved Draft\nStep: Send email\nError: getaddrinfo EAI_AGAIN mailpit\nExecution: 1234\nLeads are safe: the backend keeps every lead and retries delivery."
+}
