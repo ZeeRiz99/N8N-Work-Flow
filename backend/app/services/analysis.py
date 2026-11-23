@@ -46,7 +46,13 @@ def get_provider() -> AIProvider:
     from app.ai.gemini_provider import GeminiProvider  # the only SDK import site (D11)
 
     model, fallback = s.gemini_models
-    return GeminiProvider(s.gemini_api_key, model, fallback, s.ai_timeout_seconds)
+    return GeminiProvider(
+        s.gemini_api_key,
+        model,
+        fallback,
+        s.ai_timeout_seconds,
+        daily_budget=s.gemini_daily_budget,
+    )
 
 
 def _provider_or_error() -> AIProvider | str:

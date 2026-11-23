@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     gemini_model_fallback: str = ""
     ai_timeout_seconds: float = 30.0
     ai_daily_call_cap: int = 500  # per organization; past it, leads get a provisional score
+    # All Gemini requests on this machine per quota day (midnight Pacific), retries included.
+    # Kept under the free tier's daily quota so it is never exhausted (ADR 011).
+    gemini_daily_budget: int = 18
     ai_retry_enabled: bool = True  # retry failed analyses with backoff (never drop a lead)
     ai_retry_poll_seconds: float = 60.0
 

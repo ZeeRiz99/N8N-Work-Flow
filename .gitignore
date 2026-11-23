@@ -36,3 +36,7 @@ n8n/credentials-export/
 .DS_Store
 Thumbs.db
 *.log
+
+# local Gemini call counter (app/ai/budget.py)
+.ai-usage.json
+.ai-usage.lock

@@ -50,7 +50,14 @@ def make_provider(name: str):
     s = get_settings()
     model, fallback = s.gemini_models
     # One attempt per model: a quota error should stop the run, not burn retries.
-    return GeminiProvider(s.gemini_api_key, model, fallback, s.ai_timeout_seconds, max_attempts=2)
+    return GeminiProvider(
+        s.gemini_api_key,
+        model,
+        fallback,
+        s.ai_timeout_seconds,
+        max_attempts=2,
+        daily_budget=s.gemini_daily_budget,
+    )
 
 
 def budget_ok(expect: dict, grounded: dict) -> bool:
@@ -105,8 +112,26 @@ def score_case(case: dict, out: AnalysisOutput | None) -> dict:
     }
 
 
-def run(provider_name: str, dataset: Path, limit: int | None) -> int:
+def stratified(cases: list[dict], n: int) -> list[dict]:
+    """n cases taken round-robin across categories (dataset order inside each), so a small
+    sample still covers every kind of inquiry."""
+    groups: dict[str, list[dict]] = {}
+    for c in cases:
+        groups.setdefault(c["category"], []).append(c)
+    picked, i = [], 0
+    while len(picked) < min(n, len(cases)):
+        for g in groups.values():
+            if i < len(g) and len(picked) < n:
+                picked.append(g[i])
+        i += 1
+    return picked
+
+
+def run(provider_name: str, dataset: Path, limit: int | None, sample: int | None = None) -> int:
     cases = load_cases(dataset)[:limit]
+    full_size = len(cases)
+    if sample:
+        cases = stratified(cases, sample)
     cache_file = ROOT / "cache" / f"{provider_name}-{prompt.PROMPT_VERSION}.jsonl"
     cache_file.parent.mkdir(exist_ok=True)
     cache = {}
@@ -143,9 +168,12 @@ def run(provider_name: str, dataset: Path, limit: int | None) -> int:
             continue
         runs.append(row)
         results.append(score_case(case, AnalysisOutput.model_validate(row["output"])))
-        print(f"{case['id']:>4} {results[-1]['got']['band']:<6} "
-              f"{'ok' if results[-1]['band'] else 'MISS'}", flush=True)
-    write_report(provider_name, len(cases), results, runs, failures, stopped)
+        print(
+            f"{case['id']:>4} {results[-1]['got']['band']:<6} "
+            f"{'ok' if results[-1]['band'] else 'MISS'}",
+            flush=True,
+        )
+    write_report(provider_name, len(cases), results, runs, failures, stopped, full_size)
     return 0 if len(results) == len(cases) else 3
 
 
@@ -153,10 +181,11 @@ def pct(xs: list[bool | float]) -> str:
     return f"{100 * sum(xs) / len(xs):.0f}%" if xs else "n/a"
 
 
-def write_report(provider, total, results, runs, failures, stopped) -> None:
+def write_report(provider, total, results, runs, failures, stopped, full_size=None) -> None:
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     (ROOT / "reports").mkdir(exist_ok=True)
-    out = ROOT / "reports" / f"{today}-{provider}"
+    suffix = f"-sample{total}" if full_size and full_size != total else ""
+    out = ROOT / "reports" / f"{today}-{provider}{suffix}"
     complete = len(results) == total
     lat = [r["latency_ms"] for r in runs if r.get("latency_ms") is not None]
     tok_in = [r["input_tokens"] for r in runs if r.get("input_tokens")]
@@ -170,8 +199,13 @@ def write_report(provider, total, results, runs, failures, stopped) -> None:
         f"**Status:** {'complete' if complete else 'PARTIAL'}: {len(results)} of {total} "
         f"cases scored{f'; stopped at {stopped}' if stopped else ''}.",
         "",
-        f"- Dataset: `evals/datasets/inquiries.jsonl`, {total} fictional inquiries, "
-        "11 categories (expected values written by hand before any model run).",
+        f"- Dataset: `evals/datasets/inquiries.jsonl`, {total} fictional inquiries"
+        + (
+            f" (stratified sample of {full_size}, every category included)"
+            if full_size and full_size != total
+            else ""
+        )
+        + "; expected values written by hand before any model run.",
         f"- Provider: {provider}; model(s): {', '.join(models) or 'n/a'}; prompt "
         f"`{prompt.PROMPT_VERSION}`; schema `{prompt.SCHEMA_VERSION}`.",
         "- Pipeline: the production code (`app/ai/pipeline.py`): guard, prompt, provider, "
@@ -237,8 +271,11 @@ def write_report(provider, total, results, runs, failures, stopped) -> None:
     ]
     out.with_suffix(".md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     out.with_suffix(".json").write_text(
-        json.dumps({"provider": provider, "complete": complete, "results": results}, indent=1,
-                   ensure_ascii=False),
+        json.dumps(
+            {"provider": provider, "complete": complete, "results": results},
+            indent=1,
+            ensure_ascii=False,
+        ),
         encoding="utf-8",
         newline="\n",
     )
@@ -250,5 +287,6 @@ if __name__ == "__main__":
     ap.add_argument("--provider", choices=["fake", "gemini"], default="fake")
     ap.add_argument("--dataset", type=Path, default=ROOT / "datasets" / "inquiries.jsonl")
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--sample", type=int, help="stratified sample size (fits a daily budget)")
     a = ap.parse_args()
-    sys.exit(run(a.provider, a.dataset, a.limit))
+    sys.exit(run(a.provider, a.dataset, a.limit, a.sample))

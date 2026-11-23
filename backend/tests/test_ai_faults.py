@@ -121,3 +121,48 @@ def test_pipeline_keeps_the_lead_with_a_provisional_score(db, org, monkeypatch, 
     out = analysis.analyze_lead(db, org.id, lead.id)
     assert out["ai_status"] == "failed" and out["provisional"] is True
     assert db.scalar(select(Lead).where(Lead.id == lead.id)) is not None
+
+
+# ---------------------------------------------------------------- daily budget
+
+
+@pytest.fixture
+def usage_file(tmp_path, monkeypatch):
+    from app.ai import budget
+
+    monkeypatch.setattr(budget, "USAGE_FILE", tmp_path / "usage.json")
+    monkeypatch.setattr(budget, "_LOCK", tmp_path / "usage.lock")
+    return budget
+
+
+def test_budget_stops_calls_at_the_limit(usage_file):
+    s = Script(*[GOOD] * 10)
+    p = make(s)
+    p.daily_budget = 2
+    p.analyze("sys", "user")
+    p.analyze("sys", "user")
+    with pytest.raises(AIUnavailable, match="budget"):
+        p.analyze("sys", "user")
+    assert len(s.calls) == 2 and usage_file.used() == 2
+
+
+def test_quota_429_is_not_retried_and_closes_the_day(usage_file):
+    exhausted = genai_errors.ClientError(
+        429,
+        {
+            "error": {
+                "code": 429,
+                "message": "You exceeded your current quota",
+                "details": [{"quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier"}],
+            }
+        },
+    )
+    s = Script(exhausted, GOOD, GOOD)
+    p = make(s)
+    p.daily_budget = 10
+    with pytest.raises(AIUnavailable, match="quota"):
+        p.analyze("sys", "user")
+    assert s.calls == ["model-a"]  # no retry, no fallback model
+    with pytest.raises(AIUnavailable, match="budget"):
+        p.analyze("sys", "user")
+    assert s.calls == ["model-a"]

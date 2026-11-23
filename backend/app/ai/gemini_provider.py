@@ -11,6 +11,7 @@ from google import genai
 from google.genai import errors as genai_errors
 from pydantic import BaseModel, ValidationError
 
+from app.ai import budget
 from app.ai.breaker import CircuitBreaker, gemini_breaker
 from app.ai.provider import AIInvalidOutput, AIResult, AIUnavailable
 from app.ai.schemas import AnalysisOutput
@@ -30,6 +31,7 @@ class GeminiProvider:
         timeout_seconds: float = 30.0,
         max_attempts: int = 3,
         breaker: CircuitBreaker = gemini_breaker,
+        daily_budget: int | None = None,
     ) -> None:
         if not api_key:
             raise AIUnavailable("GEMINI_API_KEY is not set.")
@@ -38,6 +40,7 @@ class GeminiProvider:
         self.timeout_ms = int(timeout_seconds * 1000)
         self.max_attempts = max_attempts
         self.breaker = breaker
+        self.daily_budget = daily_budget  # None: no local budget (tests)
 
     def analyze(self, system: str, user: str) -> AIResult:
         return self.generate(system, user, AnalysisOutput)
@@ -52,6 +55,8 @@ class GeminiProvider:
         last: Exception | None = None
         for model in self.models:
             for attempt in range(1, self.max_attempts + 1):
+                if self.daily_budget is not None and not budget.take(self.daily_budget):
+                    raise AIUnavailable("daily Gemini budget reached; resets at midnight Pacific")
                 start = time.perf_counter()
                 try:
                     resp = self._client.models.generate_content(
@@ -70,6 +75,12 @@ class GeminiProvider:
                 except genai_errors.APIError as exc:
                     last = exc
                     code = getattr(exc, "code", None)
+                    if code == 429 and "perday" in str(exc).lower():
+                        # The DAILY quota is gone (per-minute limits are retried below).
+                        if self.daily_budget is not None:
+                            budget.exhaust()
+                        self.breaker.failure()
+                        raise AIUnavailable("Gemini daily quota exhausted") from exc
                     if code in RETRYABLE and attempt < self.max_attempts:
                         time.sleep(_retry_after(exc) or min(2**attempt, 8))
                         continue

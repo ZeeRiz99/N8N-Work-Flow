@@ -34,7 +34,12 @@ def provider():
         from app.core.config import get_settings
 
         s = get_settings()
-        return GeminiProvider(s.gemini_api_key, *s.gemini_models, s.ai_timeout_seconds)
+        return GeminiProvider(
+            s.gemini_api_key,
+            *s.gemini_models,
+            s.ai_timeout_seconds,
+            daily_budget=s.gemini_daily_budget,
+        )
     return FakeAIProvider()
 
 
