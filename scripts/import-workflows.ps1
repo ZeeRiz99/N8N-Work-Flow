@@ -30,6 +30,7 @@ $values = @{
     '__BACKEND_URL__'      = (Get-EnvValue 'BACKEND_URL_FOR_N8N' 'http://host.docker.internal:8000').TrimEnd('/')
     '__ALERT_EMAIL_TO__'   = (Get-EnvValue 'ALERT_EMAIL_TO' 'team@harbor-web.example.com')
     '__ALERT_EMAIL_FROM__' = (Get-EnvValue 'SMTP_FROM' 'hello@harbor-web.example.com')
+    '__FRONTEND_URL__'     = (Get-EnvValue 'FRONTEND_PUBLIC_URL' 'http://localhost:3000').TrimEnd('/')
 }
 
 $files = Get-ChildItem (Join-Path $root 'n8n\workflows') -Filter '*.json' |

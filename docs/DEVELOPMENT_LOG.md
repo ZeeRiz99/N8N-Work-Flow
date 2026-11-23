@@ -2,6 +2,18 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-24: Phase 8 (follow-ups, duplicates, recovery)
+
+- **Contact rules in one place** (`services/followups.contact_check`): open stage, no reply logged, not do-not-contact, not on the suppression list, has an email, fewer than 3 emails, 3-day cooldown (attempts and cooldown configurable per org). Used by follow-up preparation, recovery, approval and the send claim; an address suppressed after approval cancels the send.
+- **Suppression and replies:** `suppressions` table; "Customer replied" logs an inbound message and stops follow-ups; "Opt out" suppresses the address, sets do-not-contact and cancels open drafts and follow-ups.
+- **Follow-ups:** every sent email closes its follow-up and schedules the next while the rules allow; manual scheduling, skip with reason, prepare now. W5 prepares due follow-ups hourly, only inside each organization's business hours in its own timezone (tested for Karachi and Los Angeles, weekends excluded). Never sends.
+- **Recovery (W6):** open leads quiet 14+ days, contactable, not recovered in 30 days → check-in draft; reasons come from stored records ("reason unknown" otherwise). Idempotent.
+- **Duplicates (W7):** daily scan that never merges; merge preview (field by field, records that move) before a person confirms; merges were already audited.
+- **Sweeper (W9b):** requeues failed outbox events and delivers stalled ones itself, re-sends leads stuck by a crash, retries failed analyses.
+- **UI:** Follow-ups page, lead "Contact & follow-ups" panel, merge preview; timeline labels for every new event.
+- **Fixed by the live run:** the Gemini budget lock crashed under concurrent requests (stat on a just-released lock; on Windows a delete-pending lock raises PermissionError), which turned W6 calls into 500s and retries into extra drafts. Lock fixed (40-thread test), recovery made idempotent.
+- Tests: 284 backend (14 P8 gate tests).
+
 ## 2026-11-23: Phase 7 (MVP gate and demo readiness): v0.1.0-mvp
 
 - **Gate:** the 16-step journey passed **3 of 3 runs, each from a freshly created database** (`scripts/journey.ps1`: Playwright steps 1-15, then the backend is killed mid-flow and restarted). UI action audit: every row passes (`docs/UI_ACTION_AUDIT.md`, `scripts/ui-audit.ps1` with zero console or server errors). CI green. Pending: the developer's live demo rehearsal (`docs/DEMO_SCRIPT.md`).

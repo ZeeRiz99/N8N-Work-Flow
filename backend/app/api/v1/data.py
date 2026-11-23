@@ -147,6 +147,12 @@ def list_duplicates(user: UserDep, db: DbSession) -> list[dict]:
     return items
 
 
+@router.get("/duplicates/{candidate_id}/preview")
+def preview_merge(candidate_id: uuid.UUID, keep: uuid.UUID, user: UserDep, db: DbSession) -> dict:
+    """Shows the merge result before anyone confirms it. Changes nothing."""
+    return duplicates.preview(db, user.organization_id, candidate_id, keep)
+
+
 @router.post("/duplicates/{candidate_id}/merge")
 def merge_duplicate(candidate_id: uuid.UUID, body: MergeIn, user: UserDep, db: DbSession) -> dict:
     keep = duplicates.merge(db, user.organization_id, candidate_id, body.keep_lead_id, user.user_id)

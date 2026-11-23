@@ -1,0 +1,324 @@
+{
+  "id": "rlW6Recovery0001",
+  "name": "RL | W6 | Lost-Lead Recovery",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## RL | W6 | Lost-Lead Recovery\n**Trigger:** weekly (Monday 10:00) or manual webhook `rl/manual/W6`.\n**Does:** open leads quiet for 14+ days that may still be contacted -> a gentle check-in draft for each (reasons come from stored records, never guessed) -> Approvals queue -> email the team.\n**Never sends.**",
+        "height": 280,
+        "width": 440
+      },
+      "id": "rlW6Recovery0001n",
+      "name": "About this workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -520,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "id": "f6f60000-0000-4000-8000-000000000001",
+      "name": "Weekly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rl/manual/W6",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "f6f60000-0000-4000-8000-000000000008",
+      "name": "Run now (manual)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "5f3e2a10-6d2b-4c1a-9e7f-0000000000w6",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredWebhook001",
+          "name": "RL Webhook Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=__BACKEND_URL__/api/v1/internal/leads/recovery-candidates",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f6f60000-0000-4000-8000-000000000002",
+      "name": "Recovery candidates (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "id": "f6f60000-0000-4000-8000-000000000003",
+      "name": "Each quiet lead",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/leads/{{ $json.lead_id }}/recovery-suggestion",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "f6f60000-0000-4000-8000-000000000004",
+      "name": "Suggest check-in (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "f6f60000-0000-4000-8000-000000000005c",
+              "leftValue": "={{ $json.draft_id }}",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f6f60000-0000-4000-8000-000000000005",
+      "name": "Draft written?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "__ALERT_EMAIL_FROM__",
+        "toEmail": "__ALERT_EMAIL_TO__",
+        "subject": "Replyline: check-in drafts for quiet leads",
+        "emailFormat": "text",
+        "text": "={{ 'Check-in drafts for leads that went quiet are waiting in Approvals.\\n' + '__FRONTEND_URL__/approvals' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "f6f60000-0000-4000-8000-000000000006",
+      "name": "Email the team",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1200,
+        -100
+      ],
+      "webhookId": "f6f60000-0000-4000-8000-000000000006",
+      "credentials": {
+        "smtp": {
+          "id": "rlCredSmtp000001",
+          "name": "RL SMTP"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=__BACKEND_URL__/api/v1/internal/workflow-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow_key: 'W6', n8n_execution_id: String($execution.id), status: 'success', meta: { suggested: $('Suggest check-in (backend)').all().length } }) }}"
+      },
+      "id": "f6f60000-0000-4000-8000-000000000007",
+      "name": "Log run (backend)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rlCredSvcKey0001",
+          "name": "RL Backend Service Key"
+        }
+      },
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Weekly": {
+      "main": [
+        [
+          {
+            "node": "Recovery candidates (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run now (manual)": {
+      "main": [
+        [
+          {
+            "node": "Recovery candidates (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recovery candidates (backend)": {
+      "main": [
+        [
+          {
+            "node": "Each quiet lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Each quiet lead": {
+      "main": [
+        [
+          {
+            "node": "Suggest check-in (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suggest check-in (backend)": {
+      "main": [
+        [
+          {
+            "node": "Draft written?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft written?": {
+      "main": [
+        [
+          {
+            "node": "Email the team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email the team": {
+      "main": [
+        [
+          {
+            "node": "Log run (backend)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "errorWorkflow": "rlW9ErrorMon0001"
+  },
+  "tags": [],
+  "pinData": {}
+}

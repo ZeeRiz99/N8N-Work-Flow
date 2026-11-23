@@ -28,6 +28,23 @@ def template_draft(data: dict) -> DraftOutput:
     services = data.get("services", [])
     facts = data.get("facts", {})
     lines = [f"Hi {first}," if first else "Hello,", ""]
+    if data.get("kind") == "recovery":
+        topic = services[0]["name"].lower() if services else "your project"
+        lines += [
+            f"It has been a little while since we talked about {topic}.",
+            "If the timing was not right before, we would still be glad to help.",
+            "",
+            "Is this still something you are planning?",
+            "",
+            data.get("business", {}).get("response_time_line")
+            or "We look forward to hearing from you.",
+        ]
+        return DraftOutput(
+            subject=f"Still planning your {topic}?"[:80],
+            body="\n".join(lines),
+            questions=["Is this still something you are planning?"],
+            services_mentioned=[services[0]["name"]] if services else [],
+        )
     if data.get("kind") == "follow_up":
         topic = services[0]["name"].lower() if services else "your project"
         lines.append(f"I'm following up on your message about {topic}.")

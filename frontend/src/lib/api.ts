@@ -275,6 +275,40 @@ export interface TrendPoint {
   high: number;
 }
 
+export interface FollowUpItem {
+  id: string;
+  lead_id: string;
+  lead_name: string | null;
+  lead_company: string | null;
+  lead_priority: Priority | null;
+  due_at: string;
+  status: string;
+  attempt_no: number;
+  skip_reason: string | null;
+  draft_id: string | null;
+  completed_at: string | null;
+}
+
+export interface ContactRules {
+  allowed: boolean;
+  checks: { key: string; label: string; ok: boolean }[];
+  next_follow_up_at: string | null;
+}
+
+export interface MergePreview {
+  keep_id: string;
+  drop_id: string;
+  fields: {
+    field: string;
+    keep: string | null;
+    other: string | null;
+    result: string | null;
+    source: string;
+  }[];
+  moves: { messages: number; notes: number; timeline_entries: number };
+  do_not_contact: boolean;
+}
+
 export interface ScoringConfig {
   version: number;
   weights: Record<string, number>;
@@ -503,6 +537,20 @@ export const api = {
   analysis: (id: string) => request<LeadAnalysis>(`${lead(id)}/analysis`),
   reanalyze: (id: string) => request<unknown>(`${lead(id)}/reanalyze`, { method: "POST" }),
   scoring: () => request<ScoringConfig>("/api/v1/settings/scoring"),
+  followUps: (status: string) => request<FollowUpItem[]>(`/api/v1/follow-ups${query({ status })}`),
+  prepareFollowUp: (id: string) =>
+    request<{ status: string; reason?: string }>(`/api/v1/follow-ups/${id}/prepare`, {
+      method: "POST",
+    }),
+  skipFollowUp: (id: string, reason: string) =>
+    request<{ status: string }>(`/api/v1/follow-ups/${id}/skip`, json({ reason })),
+  scheduleFollowUp: (id: string, due_at: string) =>
+    request<FollowUpItem>(`${lead(id)}/follow-ups`, json({ due_at })),
+  markReplied: (id: string) => request<{ ok: boolean }>(`${lead(id)}/replied`, json({})),
+  optOut: (id: string) => request<{ ok: boolean }>(`${lead(id)}/opt-out`, { method: "POST" }),
+  contactRules: (id: string) => request<ContactRules>(`${lead(id)}/contact-rules`),
+  mergePreview: (pairId: string, keep: string) =>
+    request<MergePreview>(`/api/v1/duplicates/${pairId}/preview${query({ keep })}`),
   overview: (days: number) => request<OverviewData>(`/api/v1/analytics/overview?days=${days}`),
   trends: (days: number) =>
     request<{ days: number; series: TrendPoint[] }>(`/api/v1/analytics/trends?days=${days}`),

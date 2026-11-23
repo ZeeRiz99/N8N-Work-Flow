@@ -125,3 +125,48 @@ def open_candidates(db: Session, org_id: uuid.UUID) -> list[DuplicateCandidate]:
             .order_by(DuplicateCandidate.confidence.desc())
         )
     )
+
+
+MERGE_FIELDS = ("full_name", "email", "phone_raw", "company", "website", "assigned_to")
+
+
+def preview(db: Session, org_id: uuid.UUID, candidate_id: uuid.UUID, keep_id: uuid.UUID) -> dict:
+    """What a merge would produce, without changing anything: the kept lead's fields after
+    gap-filling, and how many records move over. The same rules as merge()."""
+    cand = get_owned(db, DuplicateCandidate, candidate_id, org_id)
+    if keep_id not in (cand.lead_a_id, cand.lead_b_id):
+        raise HTTPException(422, "Keep one of the two leads in this pair.")
+    drop_id = cand.lead_b_id if keep_id == cand.lead_a_id else cand.lead_a_id
+    keep = get_owned(db, Lead, keep_id, org_id)
+    drop = get_owned(db, Lead, drop_id, org_id)
+    fields = []
+    for attr in MERGE_FIELDS:
+        kept, other = getattr(keep, attr), getattr(drop, attr)
+        filled = kept is None and other is not None and attr != "full_name"
+        fields.append(
+            {
+                "field": attr,
+                "keep": str(kept) if kept is not None else None,
+                "other": str(other) if other is not None else None,
+                "result": str(other if filled else kept) if (other if filled else kept) else None,
+                "source": "other" if filled else "keep",
+            }
+        )
+
+    def moved(model) -> int:
+        return (
+            db.scalar(select(func.count()).select_from(model).where(model.lead_id == drop.id)) or 0
+        )
+
+    return {
+        "keep_id": str(keep.id),
+        "drop_id": str(drop.id),
+        "fields": fields,
+        "moves": {
+            "messages": moved(LeadInquiry),
+            "notes": moved(LeadNote),
+            "timeline_entries": moved(LeadActivity),
+        },
+        "do_not_contact": keep.do_not_contact or drop.do_not_contact,
+        "archived_after": drop.full_name,
+    }

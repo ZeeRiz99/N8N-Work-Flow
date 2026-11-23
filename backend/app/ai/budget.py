@@ -30,9 +30,12 @@ class _FileLock:
             try:
                 self.fd = os.open(_LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
                 return self
-            except FileExistsError:
-                if time.time() - _LOCK.stat().st_mtime > 30:  # stale lock from a crash
-                    _LOCK.unlink(missing_ok=True)
+            except (FileExistsError, PermissionError):  # Windows: delete-pending file
+                try:
+                    if time.time() - _LOCK.stat().st_mtime > 30:  # stale lock from a crash
+                        _LOCK.unlink(missing_ok=True)
+                except FileNotFoundError:
+                    pass  # released between our attempt and the check: just try again
                 time.sleep(0.05)
         raise TimeoutError("AI usage lock busy")
 

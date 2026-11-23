@@ -58,15 +58,29 @@ def test_playground_scores_and_saves_nothing(client, db, owner):  # noqa: F811
 
 
 def test_follow_up_eligibility_is_decided_in_code(client, db, owner):  # noqa: F811
+    from app.models import CommunicationLog
+
     lead = analyzed(client)
     status = client.get(f"/api/v1/leads/{lead['id']}/follow-up").json()
-    assert status["eligible"] is False  # just arrived: cooldown not over
-    assert {c["key"] for c in status["checks"] if not c["ok"]} == {"cooldown"}
+    assert status["eligible"] is False  # nothing sent yet: nothing to follow up on
+    assert {c["key"] for c in status["checks"] if not c["ok"]} == {"first_sent"}
     resp = client.post(f"/api/v1/leads/{lead['id']}/drafts/generate", json={"kind": "follow_up"})
-    assert resp.status_code == 409 and "3 days" in resp.text
+    assert resp.status_code == 409 and "first reply" in resp.text
 
-    row = db.get(Lead, __import__("uuid").UUID(lead["id"]))
-    row.last_interaction_at = datetime.now(UTC) - timedelta(days=4)
+    org_id = db.get(Lead, __import__("uuid").UUID(lead["id"])).organization_id
+    log = CommunicationLog(
+        organization_id=org_id,
+        lead_id=__import__("uuid").UUID(lead["id"]),
+        direction="out",
+        channel="email",
+        status="sent",
+        occurred_at=datetime.now(UTC) - timedelta(days=1),
+    )
+    db.add(log)
+    db.flush()
+    status = client.get(f"/api/v1/leads/{lead['id']}/follow-up").json()
+    assert {c["key"] for c in status["checks"] if not c["ok"]} == {"cooldown"}
+    log.occurred_at = datetime.now(UTC) - timedelta(days=4)
     db.flush()
     assert client.get(f"/api/v1/leads/{lead['id']}/follow-up").json()["eligible"] is True
     d = client.post(f"/api/v1/leads/{lead['id']}/drafts/generate", json={"kind": "follow_up"})

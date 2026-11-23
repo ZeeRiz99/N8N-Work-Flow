@@ -9,13 +9,13 @@ Safety rules enforced here, in one place:
 """
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.ai.draft_checks import finalize_body, passed
-from app.models import CommunicationDraft, CommunicationLog, FollowUp, Lead, OutboxEvent
+from app.models import CommunicationDraft, CommunicationLog, Lead, OutboxEvent
 from app.services.activity import audit, record
 from app.services.drafting import recheck
 from app.services.leads import _event_envelope
@@ -106,6 +106,10 @@ def approve(
         raise DraftStateError("Fix these checks first: " + "; ".join(failing) + ".")
     if lead is None or lead.do_not_contact or not lead.email:
         raise DraftStateError("This lead cannot be contacted.")
+    from app.services.followups import is_suppressed
+
+    if is_suppressed(db, draft.organization_id, lead.email):
+        raise DraftStateError("This address is on the suppression list.")
     draft.to_address = lead.email  # always the lead's current address
     draft.status, draft.approved_by, draft.approved_at = "approved", actor_id, datetime.now(UTC)
     db.add(
@@ -176,8 +180,19 @@ def claim_send(db: Session, org_id: uuid.UUID, draft_id: uuid.UUID) -> Communica
         .values(status="sending")
         .returning(CommunicationDraft.id)
     )
+    if not claimed:
+        db.commit()
+        return None
+    draft = db.get(CommunicationDraft, claimed)
+    # The suppression list is honoured by every send path, also after approval.
+    from app.services.followups import is_suppressed
+
+    if is_suppressed(db, org_id, draft.to_address):
+        draft.status, draft.send_error = "cancelled", "address suppressed after approval"
+        db.commit()
+        return None
     db.commit()
-    return db.get(CommunicationDraft, claimed) if claimed else None
+    return draft
 
 
 def _sending(db: Session, org_id: uuid.UUID, draft_id: uuid.UUID) -> CommunicationDraft:
@@ -213,17 +228,11 @@ def mark_sent(
     lead = db.get(Lead, draft.lead_id)
     if lead is not None:
         lead.last_interaction_at = now
-        lead.next_follow_up_at = now + timedelta(days=FOLLOW_UP_DAYS)
-    # Basic follow-up scheduling (P6): due in 3 days; full eligibility rules arrive in P8.
-    db.add(
-        FollowUp(
-            organization_id=org_id,
-            lead_id=draft.lead_id,
-            due_at=now + timedelta(days=FOLLOW_UP_DAYS),
-            status="scheduled",
-            attempt_no=1 if draft.kind == "first_reply" else 2,
-        )
-    )
+    db.flush()
+    # Close the follow-up this email answered; schedule the next one if the rules allow (P8).
+    from app.services.followups import on_sent
+
+    on_sent(db, draft, now)
     record(
         db,
         org_id,

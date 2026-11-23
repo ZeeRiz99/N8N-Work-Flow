@@ -3,7 +3,7 @@ follow-up eligibility, and per-organization AI settings. None of them can send o
 anything except the activity log."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -20,7 +20,6 @@ from app.models import (
     LeadInquiry,
     LeadNote,
     Organization,
-    PipelineStage,
 )
 from app.services.activity import record
 from app.services.analysis import _catalog, _provider_or_error, active_config, latest
@@ -238,40 +237,32 @@ COOLDOWN_DAYS = 3
 
 
 def follow_up_status(db: Session, lead: Lead, now: datetime | None = None) -> dict:
-    """Whether to follow up is decided here, in code (§8.5). The AI only writes the wording."""
-    now = now or datetime.now(UTC)
-    stage = db.get(PipelineStage, lead.stage_id) if lead.stage_id else None
+    """Whether to follow up is decided in code (§8.5), by the shared contact rules."""
+    from app.models import CommunicationLog
+    from app.services.followups import COOLDOWN_DAYS, allowed, contact_check
+
     sent = (
         db.scalar(
             select(func.count())
-            .select_from(LeadActivity)
-            .where(LeadActivity.lead_id == lead.id, LeadActivity.type == "follow_up_drafted")
+            .select_from(CommunicationLog)
+            .where(
+                CommunicationLog.lead_id == lead.id,
+                CommunicationLog.direction == "out",
+                CommunicationLog.status == "sent",
+            )
         )
         or 0
     )
+    # A follow-up follows something: the first reply must have gone out.
+    checks = [{"key": "first_sent", "label": "A first reply was already sent", "ok": sent > 0}]
+    checks += contact_check(db, lead, now)
     last = lead.last_interaction_at
-    days = (now - last).days if last else None
-    checks = [
-        ("open", "Lead is in an open stage", stage is None or stage.category == "open"),
-        ("contactable", "Not marked do not contact", not lead.do_not_contact),
-        ("email", "Has an email address", bool(lead.email)),
-        (
-            "attempts",
-            f"Fewer than {MAX_FOLLOW_UPS} follow-ups so far ({sent})",
-            sent < MAX_FOLLOW_UPS,
-        ),
-        (
-            "cooldown",
-            f"At least {COOLDOWN_DAYS} days since the last contact"
-            + (f" ({days} days)" if days is not None else ""),
-            days is None or days >= COOLDOWN_DAYS,
-        ),
-    ]
+    blocked_by_cooldown = [c["key"] for c in checks if not c["ok"]] == ["cooldown"]
     return {
-        "eligible": all(ok for _, _, ok in checks),
-        "checks": [{"key": k, "label": label, "ok": ok} for k, label, ok in checks],
+        "eligible": allowed(checks),
+        "checks": checks,
         "next_possible": (last + timedelta(days=COOLDOWN_DAYS)).isoformat()
-        if last and days is not None and days < COOLDOWN_DAYS
+        if blocked_by_cooldown and last
         else None,
-        "replies_tracked": False,  # inbound replies are not recorded yet
+        "replies_tracked": True,
     }

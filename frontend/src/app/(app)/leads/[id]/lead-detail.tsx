@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { AnalysisPanel, ScorePanel, sourceLabel } from "./ai-panels";
+import { ContactPanel } from "./contact-panel";
 import { DraftPanel } from "./draft-panel";
 import { AskPanel } from "@/components/ask-panel";
 import { AiStatusPill, PriorityBadge } from "@/components/badges";
@@ -57,6 +58,18 @@ function describe(a: Activity): string {
       return `Team alerted (${p.channel})`;
     case "alert_failed":
       return `Alert failed (${p.channel}); admin notified`;
+    case "reply_logged":
+      return "Customer replied; follow-ups stopped";
+    case "opted_out":
+      return "Opted out; address suppressed";
+    case "follow_up_scheduled":
+      return "Follow-up scheduled";
+    case "follow_up_skipped":
+      return `Follow-up skipped (${p.reason ?? ""})`;
+    case "recovery_suggested":
+      return "Check-in draft suggested";
+    case "intake_requeued":
+      return "Re-sent to automation after an interruption";
     case "question_asked":
       return "Question asked about this lead";
     case "follow_up_drafted":
@@ -358,6 +371,7 @@ export function LeadDetail() {
 
         <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-6">
           {analysis && <ScorePanel data={analysis} />}
+          <ContactPanel leadId={lead.id} onChanged={load} />
           <AskPanel leadId={lead.id} compact />
           <ContactDetails lead={lead} onSaved={(m) => act(async () => undefined, m)} />
           <section className={`${card} flex flex-col gap-3 p-5`}>

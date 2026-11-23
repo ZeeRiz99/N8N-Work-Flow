@@ -7,6 +7,7 @@ from app.api.v1 import (
     automation,
     data,
     drafts,
+    followups,
     internal,
     leads,
     org,
@@ -27,3 +28,4 @@ api_router.include_router(sample.router)
 api_router.include_router(drafts.router)
 api_router.include_router(automation.router)
 api_router.include_router(analytics.router)
+api_router.include_router(followups.router)
