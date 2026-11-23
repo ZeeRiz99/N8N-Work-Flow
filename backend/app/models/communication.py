@@ -7,7 +7,16 @@ atomically (approved -> sending) so a redelivered event cannot send twice.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, Text, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -23,7 +32,7 @@ DRAFT_STATUSES = (
     "failed",
     "cancelled",
 )
-DRAFT_KINDS = ("first_reply", "follow_up")
+DRAFT_KINDS = ("first_reply", "follow_up", "recovery")
 FOLLOW_UP_STATUSES = ("scheduled", "awaiting_approval", "done", "skipped", "cancelled")
 
 
@@ -110,3 +119,24 @@ class FollowUp(IdMixin, TimestampMixin, Base):
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     attempt_no: Mapped[int] = mapped_column(server_default=text("1"))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+SUPPRESSION_REASONS = ("unsubscribed", "replied", "bounced", "manual")
+
+
+class Suppression(IdMixin, TimestampMixin, Base):
+    """Addresses that must not be contacted (master prompt §6). Every send path checks it."""
+
+    __tablename__ = "suppressions"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "channel", "address_normalized"),
+        CheckConstraint(f"reason IN {SUPPRESSION_REASONS}", name="reason_valid"),
+    )
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE")
+    )
+    channel: Mapped[str] = mapped_column(String(20), server_default=text("'email'"))
+    address_normalized: Mapped[str] = mapped_column(String(320))
+    reason: Mapped[str] = mapped_column(String(20))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))

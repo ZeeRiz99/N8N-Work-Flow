@@ -110,11 +110,20 @@ def log_workflow_run(run: WorkflowRunIn, org: ServiceOrg, db: DbSession) -> dict
 
 @router.post("/outbox/redispatch")
 def outbox_redispatch(request: Request, org: ServiceOrg, db: DbSession) -> dict:
+    """W9b sweeper: requeue failed events and deliver stalled ones right away (also covers a
+    dead dispatcher thread)."""
     count = redispatch_failed(db)
+    import httpx
+
+    from app.services.outbox import dispatch_once
+
+    settings = get_settings()
+    with httpx.Client(timeout=settings.outbox_http_timeout_seconds) as client:
+        delivered = dispatch_once(db, settings, client)
     worker = getattr(request.app.state, "outbox", None)
     if worker is not None:
         worker.nudge()
-    return {"requeued": count}
+    return {"requeued": count, "dispatched": delivered}
 
 
 # ---------------------------------------------------------------- drafts (W4, W4b)
@@ -300,3 +309,72 @@ def log_notification(n: NotificationLogIn, org: ServiceOrg, db: DbSession) -> di
         message=n.error or f"{n.channel} alert failed",
     )
     return log_workflow_error(err, org, db)
+
+
+# ---------------------------------------------------------------- P8: W5, W6, W7, W9b
+
+
+@router.get("/follow-ups/due")
+def internal_due_follow_ups(org: ServiceOrg, db: DbSession) -> dict:
+    """W5: due follow-ups, only while the organization is inside its own business hours."""
+    from app.services import followups
+
+    items = followups.due_follow_ups(db, org_id=org.id)
+    return {"items": [{"id": str(f.id), "lead_id": str(f.lead_id)} for f in items]}
+
+
+@router.post("/follow-ups/{fu_id}/prepare")
+def internal_prepare_follow_up(fu_id: uuid.UUID, org: ServiceOrg, db: DbSession) -> dict:
+    """W5: check the rules; skip with a reason or write a draft for approval. Never sends."""
+    from app.models import FollowUp
+    from app.services import followups
+
+    f = db.scalar(select(FollowUp).where(FollowUp.id == fu_id, FollowUp.organization_id == org.id))
+    if f is None:
+        raise HTTPException(404, "Follow-up not found.")
+    return followups.prepare(db, f)
+
+
+@router.get("/leads/recovery-candidates")
+def internal_recovery_candidates(org: ServiceOrg, db: DbSession) -> dict:
+    from app.services import followups
+
+    leads = followups.recovery_candidates(db, org.id)
+    return {
+        "items": [{"lead_id": str(x.id), "reason": followups.recovery_reason(db, x)} for x in leads]
+    }
+
+
+@router.post("/leads/{lead_id}/recovery-suggestion")
+def internal_recovery_suggestion(lead_id: uuid.UUID, org: ServiceOrg, db: DbSession) -> dict:
+    """W6: a gentle check-in draft for a quiet lead, into the Approvals queue."""
+    from app.services import followups
+
+    lead = db.scalar(select(Lead).where(Lead.id == lead_id, Lead.organization_id == org.id))
+    if lead is None:
+        raise HTTPException(404, "Lead not found.")
+    return followups.recovery_suggestion(db, lead)
+
+
+@router.post("/duplicates/scan")
+def internal_duplicate_scan(org: ServiceOrg, db: DbSession) -> dict:
+    """W7: find new duplicate pairs. Never merges; a person reviews them."""
+    from app.services import duplicates
+
+    added = duplicates.scan(db, org.id)
+    link = f"{get_settings().frontend_public_url.rstrip('/')}/duplicates"
+    return {
+        "added": added,
+        "notify": added > 0,
+        "subject": f"Replyline: {added} possible duplicate lead pair(s) to review",
+        "text": f"{added} new possible duplicate pair(s) were found. Nothing was merged.\n"
+        f"Review them here: {link}",
+    }
+
+
+@router.post("/leads/retry-ai")
+def internal_retry_ai(org: ServiceOrg, db: DbSession) -> dict:
+    """W9b: retry failed analyses that are due and re-queue leads stuck by a crash (capped)."""
+    from app.services.analysis import requeue_stuck_leads, retry_failed
+
+    return {"requeued_stuck": requeue_stuck_leads(db), "recovered": retry_failed(db)}
