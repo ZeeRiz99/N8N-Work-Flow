@@ -74,7 +74,11 @@ function Playground() {
             Use an example
           </button>
         </div>
-        {error && <p className="text-sm text-[#A32A12]">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-[#A32A12]">
+            {error}
+          </p>
+        )}
       </form>
 
       <section
@@ -138,7 +142,7 @@ function Playground() {
 
 function LeadTools() {
   const [query, setQuery] = useState("");
-  const [leads, setLeads] = useState<LeadRow[]>([]);
+  const [leads, setLeads] = useState<LeadRow[] | null>(null);
   const [chosen, setChosen] = useState<LeadRow | null>(null);
 
   useEffect(() => {
@@ -146,7 +150,7 @@ function LeadTools() {
       api
         .leads({ q: query || undefined, sort: "score", page: 1 })
         .then((p) => setLeads(p.items.slice(0, 8)))
-        .catch(() => undefined);
+        .catch(() => setLeads([]));
     }, 250);
     return () => clearTimeout(t);
   }, [query]);
@@ -167,7 +171,8 @@ function LeadTools() {
           onChange={(e) => setQuery(e.target.value)}
         />
         <ul className="flex flex-col">
-          {leads.map((l) => (
+          {leads === null && <li className="text-sm text-[#5A6075]">Loading leads…</li>}
+          {leads?.map((l) => (
             <li key={l.id}>
               <button
                 type="button"
@@ -183,7 +188,7 @@ function LeadTools() {
               </button>
             </li>
           ))}
-          {leads.length === 0 && <li className="text-sm text-[#5A6075]">No leads found.</li>}
+          {leads?.length === 0 && <li className="text-sm text-[#5A6075]">No leads found.</li>}
         </ul>
       </section>
       <div className="flex min-w-0 flex-[3_1_420px] flex-col gap-4">
@@ -212,6 +217,11 @@ function LeadTools() {
   );
 }
 
+const TABS = [
+  ["playground", "Analyze text"],
+  ["lead", "Ask about a lead"],
+] as const;
+
 export default function AssistantPage() {
   const [tab, setTab] = useState<"playground" | "lead">("playground");
   return (
@@ -220,18 +230,40 @@ export default function AssistantPage() {
         <h1 className="text-[26px] leading-tight font-bold tracking-tight">AI Assistant</h1>
         <p className="text-[#5A6075]">Drafts only: nothing is sent automatically.</p>
       </header>
-      <div role="tablist" aria-label="Assistant tools" className="flex gap-2">
-        {(
-          [
-            ["playground", "Analyze text"],
-            ["lead", "Ask about a lead"],
-          ] as const
-        ).map(([key, label]) => (
+      <div
+        role="tablist"
+        aria-label="Assistant tools"
+        className="flex gap-2"
+        onKeyDown={(e) => {
+          // WAI-ARIA tabs: arrows move between tabs, Home/End jump to the ends.
+          const keys = TABS.map(([k]) => k);
+          const at = keys.indexOf(tab);
+          const next =
+            e.key === "ArrowRight"
+              ? keys[(at + 1) % keys.length]
+              : e.key === "ArrowLeft"
+                ? keys[(at - 1 + keys.length) % keys.length]
+                : e.key === "Home"
+                  ? keys[0]
+                  : e.key === "End"
+                    ? keys[keys.length - 1]
+                    : null;
+          if (next) {
+            e.preventDefault();
+            setTab(next);
+            document.getElementById(`tab-${next}`)?.focus();
+          }
+        }}
+      >
+        {TABS.map(([key, label]) => (
           <button
             key={key}
+            id={`tab-${key}`}
             role="tab"
             type="button"
             aria-selected={tab === key}
+            aria-controls={`panel-${key}`}
+            tabIndex={tab === key ? 0 : -1}
             onClick={() => setTab(key)}
             className={`rounded-lg px-4 py-2 text-sm font-semibold ${tab === key ? "bg-[#EEF0FF] text-[#3730A3]" : "text-[#3A4057] hover:bg-[#F6F7FB]"}`}
           >
@@ -239,7 +271,9 @@ export default function AssistantPage() {
           </button>
         ))}
       </div>
-      <div role="tabpanel">{tab === "playground" ? <Playground /> : <LeadTools />}</div>
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === "playground" ? <Playground /> : <LeadTools />}
+      </div>
     </div>
   );
 }

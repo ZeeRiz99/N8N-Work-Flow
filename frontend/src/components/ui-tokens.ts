@@ -1,6 +1,7 @@
 // Shared class names from docs/design/DESIGN_REFERENCE.md (controls are 44px tall, 1px border).
+// Field border #8A90A6 = 3.2:1 on white (WCAG 1.4.11 non-text contrast for input boundaries).
 export const field =
-  "min-h-11 w-full rounded-lg border border-[#CDD2E0] bg-white px-3 text-[#1A1D2B]";
+  "min-h-11 w-full rounded-lg border border-[#8A90A6] bg-white px-3 text-[#1A1D2B]";
 export const buttonSecondary =
   "inline-flex min-h-11 items-center justify-center rounded-lg border border-[#CDD2E0] bg-white px-4 font-medium disabled:opacity-60";
 export const buttonPrimary =

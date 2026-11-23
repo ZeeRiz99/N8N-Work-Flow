@@ -79,7 +79,11 @@ export function AskPanel({ leadId, compact }: { leadId: string; compact?: boolea
           ))}
         </div>
       )}
-      {error && <p className="text-sm text-[#A32A12]">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-[#A32A12]">
+          {error}
+        </p>
+      )}
       {result && (
         <div aria-live="polite" className="flex flex-col gap-2 rounded-lg bg-[#F6F7FB] p-4">
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{result.answer}</p>
