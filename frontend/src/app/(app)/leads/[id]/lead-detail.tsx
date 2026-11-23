@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
+import { AnalysisPanel, ScorePanel, sourceLabel } from "./ai-panels";
+import { DraftPanel } from "./draft-panel";
+import { AskPanel } from "@/components/ask-panel";
 import { AiStatusPill, PriorityBadge } from "@/components/badges";
 import { useSession } from "@/components/session";
 import {
@@ -20,6 +23,7 @@ import {
   ApiError,
   errorText,
   type Inquiry,
+  type LeadAnalysis,
   type LeadRow,
   type Member,
   type Note,
@@ -36,7 +40,17 @@ function describe(a: Activity): string {
     case "inquiry_received":
       return `Message received (${p.channel})`;
     case "scored":
-      return `Scored ${p.score}, ${p.band} priority${p.source === "fake" ? " (fake AI)" : ""}`;
+      return `Scored ${p.score}, ${p.band} priority${p.provisional ? " (provisional)" : ""}`;
+    case "reanalysis_requested":
+      return "Re-analysis requested";
+    case "question_asked":
+      return "Question asked about this lead";
+    case "follow_up_drafted":
+      return `Follow-up draft written (${p.style})`;
+    case "draft_generated":
+      return `Reply draft written (${p.style})`;
+    case "rescored":
+      return `Re-scored ${p.from_score ?? "?"} → ${p.score}`;
     case "stage_changed":
       return `Moved to ${p.to_label ?? p.to_stage}`;
     case "assigned":
@@ -73,18 +87,21 @@ export function LeadDetail() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activity, setActivity] = useState<Activity[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [analysis, setAnalysis] = useState<LeadAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [l, n, a, i] = await Promise.all([
+      const [l, n, a, i, an] = await Promise.all([
         api.lead(id),
         api.notes(id),
         api.activities(id),
         api.inquiries(id),
+        api.analysis(id),
       ]);
+      setAnalysis(an);
       setLead(l);
       setNotes(n);
       setActivity(a);
@@ -187,8 +204,10 @@ export function LeadDetail() {
               {lead.score !== null && (
                 <span className="text-sm font-semibold tabular-nums">
                   Score {lead.score}
-                  {lead.score_source === "fake" && (
-                    <span className="ml-1 font-normal text-[#5A6075]">(fake AI)</span>
+                  {sourceLabel(lead.score_source, lead.score_provisional) && (
+                    <span className="ml-1 font-normal text-[#5A6075]">
+                      ({sourceLabel(lead.score_source, lead.score_provisional)})
+                    </span>
                   )}
                 </span>
               )}
@@ -273,6 +292,26 @@ export function LeadDetail() {
 
       <div className="flex flex-wrap items-start gap-6">
         <div className="flex min-w-0 flex-[3_1_520px] flex-col gap-6">
+          {analysis && (
+            <AnalysisPanel
+              data={analysis}
+              onReanalyze={async () => {
+                await api.reanalyze(lead.id);
+                setToast("Analysis updated.");
+                await load();
+              }}
+            />
+          )}
+          <DraftPanel
+            leadId={lead.id}
+            disabled={
+              lead.do_not_contact
+                ? "This lead is marked do not contact."
+                : !lead.email
+                  ? "Add an email address to draft a reply."
+                  : undefined
+            }
+          />
           <section className={`${card} flex flex-col gap-3 p-6`}>
             <h2 className="text-base font-semibold">Messages</h2>
             {inquiries.length === 0 ? (
@@ -304,6 +343,8 @@ export function LeadDetail() {
         </div>
 
         <div className="flex min-w-0 flex-[2_1_320px] flex-col gap-6">
+          {analysis && <ScorePanel data={analysis} />}
+          <AskPanel leadId={lead.id} compact />
           <ContactDetails lead={lead} onSaved={(m) => act(async () => undefined, m)} />
           <section className={`${card} flex flex-col gap-3 p-5`}>
             <h2 className="text-base font-semibold">Timeline</h2>

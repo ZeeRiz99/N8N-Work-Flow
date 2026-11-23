@@ -9,7 +9,7 @@ import { RequireSession } from "@/components/session";
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-full flex-1 flex-col font-[family-name:var(--font-public-sans)] text-[#1A1D2B]">
-      <DemoBanner text="Fictional people and companies. Scores come from a fake AI until Phase 5." />
+      <DemoBanner text="Fictional people and companies. Scores are computed by Replyline from facts the AI quotes from each message." />
       <Suspense
         fallback={
           <div aria-busy="true" className="m-8 h-24 animate-pulse rounded-xl bg-[#E9ECF4]" />

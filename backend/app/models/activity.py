@@ -1,21 +1,20 @@
 """Lead notes, the lead timeline (activities) and the organization audit log."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, IdMixin, TimestampMixin
+from app.models.base import Base, IdMixin, TimestampMixin, utcnow
 
 ACTOR_TYPES = ("user", "system", "workflow", "ai")
 
 
 def _now() -> datetime:
-    # PostgreSQL now() is the same for a whole transaction, so several timeline entries written
-    # in one request would tie. A Python timestamp per row keeps their order.
-    return datetime.now(UTC)
+    # PostgreSQL now() is the same for a whole transaction; utcnow() is per row and increasing.
+    return utcnow()
 
 
 class LeadNote(IdMixin, TimestampMixin, Base):

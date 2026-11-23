@@ -1,0 +1,1547 @@
+{
+ "provider": "fake",
+ "complete": true,
+ "results": [
+  {
+   "id": "c01",
+   "category": "clear_high",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 200000,
+     "max_minor": 200000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$2,000",
+     "source": "message"
+    },
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "high",
+    "score": 88
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": 2000,
+    "currency": "USD",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "high"
+   },
+   "accepted": 5,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "c02",
+   "category": "clear_high",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Booking System"
+    ],
+    "budget": {
+     "min_minor": 350000,
+     "max_minor": 350000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$3,500",
+     "source": "message"
+    },
+    "urgency": "immediate",
+    "intent": "researching",
+    "band": "medium",
+    "score": 75
+   },
+   "want": {
+    "services": [
+     "Booking System"
+    ],
+    "budget_max": 3500,
+    "currency": "USD",
+    "urgency": "immediate",
+    "intent": "hiring",
+    "band": "high"
+   },
+   "accepted": 3,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "c03",
+   "category": "clear_high",
+   "service": false,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": false,
+   "intent": true,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "AI Chatbot",
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 400000,
+     "max_minor": 400000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$4,000",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 74
+   },
+   "want": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget_max": 4000,
+    "currency": "USD",
+    "urgency": "immediate",
+    "intent": "hiring",
+    "band": "high"
+   },
+   "accepted": 4,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "c04",
+   "category": "clear_high",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": false,
+   "intent": true,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Automation Setup"
+    ],
+    "budget": {
+     "min_minor": 120000,
+     "max_minor": 120000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$1,200",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 74
+   },
+   "want": {
+    "services": [
+     "Automation Setup"
+    ],
+    "budget_max": 1200,
+    "currency": "USD",
+    "urgency": "immediate",
+    "intent": "hiring",
+    "band": "high"
+   },
+   "accepted": 3,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "c05",
+   "category": "clear_high",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": false,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 300000,
+     "max_minor": 300000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$3,000",
+     "source": "message"
+    },
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "high",
+    "score": 85
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": 4000,
+    "currency": "USD",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "high"
+   },
+   "accepted": 4,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "c06",
+   "category": "clear_high",
+   "service": false,
+   "service_recall": 1.0,
+   "budget": false,
+   "timeline": false,
+   "intent": true,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Booking System",
+     "Website Development"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 62
+   },
+   "want": {
+    "services": [
+     "Booking System"
+    ],
+    "budget_max": 2000,
+    "currency": "USD",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "high"
+   },
+   "accepted": 3,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "c07",
+   "category": "clear_high",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 60000000,
+     "max_minor": 60000000,
+     "currency": "PKR",
+     "comparable": true,
+     "evidence": "PKR 600,000",
+     "source": "message"
+    },
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 75
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": 600000,
+    "currency": "PKR",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "medium"
+   },
+   "accepted": 4,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "c08",
+   "category": "clear_high",
+   "service": false,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Automation Setup",
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 250000,
+     "max_minor": 250000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$2,500",
+     "source": "message"
+    },
+    "urgency": "immediate",
+    "intent": "researching",
+    "band": "medium",
+    "score": 75
+   },
+   "want": {
+    "services": [
+     "Automation Setup"
+    ],
+    "budget_max": 2500,
+    "currency": "USD",
+    "urgency": "immediate",
+    "intent": "hiring",
+    "band": "high"
+   },
+   "accepted": 4,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "v01",
+   "category": "vague",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "score": 46
+   },
+   "want": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "intent_also_ok": [
+     "price_check"
+    ]
+   },
+   "accepted": 1,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "v02",
+   "category": "vague",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "score": 43
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "price_check",
+    "band": "low",
+    "intent_also_ok": [
+     "researching",
+     "unknown"
+    ]
+   },
+   "accepted": 1,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "v03",
+   "category": "vague",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "unknown",
+    "band": "low",
+    "score": 27
+   },
+   "want": {
+    "services": [],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "intent_also_ok": [
+     "unknown",
+     "price_check"
+    ]
+   },
+   "accepted": 0,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "v04",
+   "category": "vague",
+   "service": false,
+   "service_recall": 0.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [],
+    "budget": null,
+    "urgency": "flexible",
+    "intent": "unknown",
+    "band": "low",
+    "score": 33
+   },
+   "want": {
+    "services": [
+     "Automation Setup"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "flexible",
+    "intent": "researching",
+    "band": "low"
+   },
+   "accepted": 1,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "m01",
+   "category": "missing_contact",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Booking System"
+    ],
+    "budget": {
+     "min_minor": 150000,
+     "max_minor": 150000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$1,500",
+     "source": "message"
+    },
+    "urgency": "immediate",
+    "intent": "researching",
+    "band": "medium",
+    "score": 67
+   },
+   "want": {
+    "services": [
+     "Booking System"
+    ],
+    "budget_max": 1500,
+    "currency": "USD",
+    "urgency": "immediate",
+    "intent": "hiring",
+    "band": "medium"
+   },
+   "accepted": 3,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "m02",
+   "category": "missing_contact",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 54
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "price_check",
+    "band": "low",
+    "intent_also_ok": [
+     "researching"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "m03",
+   "category": "missing_contact",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget": {
+     "min_minor": 500000,
+     "max_minor": 500000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "5k",
+     "source": "message"
+    },
+    "urgency": "soon",
+    "intent": "researching",
+    "band": "medium",
+    "score": 67
+   },
+   "want": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget_max": 5000,
+    "currency": "USD",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "medium"
+   },
+   "accepted": 3,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "b01",
+   "category": "budget_format",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": false,
+   "timeline": false,
+   "intent": false,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 200000,
+     "max_minor": 200000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$2,000",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "medium",
+    "score": 63
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": 3000,
+    "currency": "USD",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "high",
+    "intent_also_ok": [
+     "price_check"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "b02",
+   "category": "budget_format",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": false,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Booking System"
+    ],
+    "budget": {
+     "min_minor": 150000,
+     "max_minor": 150000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "1.5k USD",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "medium",
+    "score": 57
+   },
+   "want": {
+    "services": [
+     "Booking System"
+    ],
+    "budget_max": 1500,
+    "currency": "USD",
+    "urgency": "flexible",
+    "intent": "hiring",
+    "band": "medium",
+    "intent_also_ok": [
+     "price_check",
+     "researching"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "b03",
+   "category": "budget_format",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 30000000,
+     "max_minor": 30000000,
+     "currency": "PKR",
+     "comparable": true,
+     "evidence": "3 lakh rupees",
+     "source": "message"
+    },
+    "urgency": "soon",
+    "intent": "researching",
+    "band": "medium",
+    "score": 63
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": 300000,
+    "currency": "PKR",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "medium"
+   },
+   "accepted": 3,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "b04",
+   "category": "budget_format",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Booking System",
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 400000,
+     "max_minor": 400000,
+     "currency": "EUR",
+     "comparable": true,
+     "evidence": "4.000 EUR",
+     "source": "message"
+    },
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 75
+   },
+   "want": {
+    "services": [
+     "Website Development",
+     "Booking System"
+    ],
+    "budget_max": 4000,
+    "currency": "EUR",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "medium"
+   },
+   "accepted": 5,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "b05",
+   "category": "budget_format",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 30000,
+     "max_minor": 30000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$300",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "score": 40
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": 300,
+    "currency": "USD",
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "low",
+    "intent_also_ok": [
+     "price_check"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "b06",
+   "category": "budget_format",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Automation Setup"
+    ],
+    "budget": {
+     "min_minor": 50000,
+     "max_minor": 50000,
+     "currency": "USDT",
+     "comparable": true,
+     "evidence": "500 USDT",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "medium",
+    "score": 57
+   },
+   "want": {
+    "services": [
+     "Automation Setup"
+    ],
+    "budget_max": 500,
+    "currency": "USDT",
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "intent_also_ok": [
+     "price_check"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "t01",
+   "category": "ambiguous_timeline",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 250000,
+     "max_minor": 250000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$2,500",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "medium",
+    "score": 57
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": 2500,
+    "currency": "USD",
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "intent_also_ok": [
+     "researching",
+     "price_check"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "t02",
+   "category": "ambiguous_timeline",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": false,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Booking System"
+    ],
+    "budget": {
+     "min_minor": 200000,
+     "max_minor": 200000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$2,000",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "medium",
+    "score": 63
+   },
+   "want": {
+    "services": [
+     "Booking System"
+    ],
+    "budget_max": 2000,
+    "currency": "USD",
+    "urgency": "flexible",
+    "intent": "hiring",
+    "band": "medium"
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "t03",
+   "category": "ambiguous_timeline",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": false,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "score": 44
+   },
+   "want": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "flexible",
+    "intent": "researching",
+    "band": "low"
+   },
+   "accepted": 1,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "p01",
+   "category": "price_shopper",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 55
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "price_check",
+    "band": "low"
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "p02",
+   "category": "price_shopper",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Booking System"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 58
+   },
+   "want": {
+    "services": [
+     "Booking System"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "price_check",
+    "band": "low"
+   },
+   "accepted": 3,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "p03",
+   "category": "price_shopper",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "score": 44
+   },
+   "want": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "price_check",
+    "band": "low"
+   },
+   "accepted": 1,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "j01",
+   "category": "job_seeker",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "job_seeker",
+    "band": "low",
+    "score": 23
+   },
+   "want": {
+    "services": [],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "job_seeker",
+    "band": "low"
+   },
+   "accepted": 0,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "j02",
+   "category": "job_seeker",
+   "service": false,
+   "service_recall": 0.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Automation Setup"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "score": 44
+   },
+   "want": {
+    "services": [],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "job_seeker",
+    "band": "low",
+    "intent_also_ok": [
+     "partnership"
+    ]
+   },
+   "accepted": 1,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "s01",
+   "category": "spam",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "spam",
+    "band": "low",
+    "score": 10
+   },
+   "want": {
+    "services": [],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "spam",
+    "band": "low"
+   },
+   "accepted": 0,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "s02",
+   "category": "spam",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "spam",
+    "band": "low",
+    "score": 10
+   },
+   "want": {
+    "services": [],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "spam",
+    "band": "low"
+   },
+   "accepted": 0,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "s03",
+   "category": "spam",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": false,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [],
+    "budget": {
+     "min_minor": 5000,
+     "max_minor": 5000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$50",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "low",
+    "score": 42
+   },
+   "want": {
+    "services": [],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "spam",
+    "band": "low",
+    "intent_also_ok": [
+     "partnership"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "l01",
+   "category": "multilingual",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": false,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Booking System"
+    ],
+    "budget": {
+     "min_minor": 20000000,
+     "max_minor": 20000000,
+     "currency": "PKR",
+     "comparable": true,
+     "evidence": "2 lakh",
+     "source": "message"
+    },
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "medium",
+    "score": 51
+   },
+   "want": {
+    "services": [
+     "Booking System"
+    ],
+    "budget_max": 200000,
+    "currency": "PKR",
+    "urgency": "immediate",
+    "intent": "hiring",
+    "band": "medium",
+    "intent_also_ok": [
+     "researching"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "l02",
+   "category": "multilingual",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "score": 44
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "price_check",
+    "band": "low",
+    "intent_also_ok": [
+     "hiring",
+     "researching"
+    ]
+   },
+   "accepted": 1,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "l03",
+   "category": "multilingual",
+   "service": false,
+   "service_recall": 0.0,
+   "budget": false,
+   "timeline": false,
+   "intent": false,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "unknown",
+    "band": "low",
+    "score": 33
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": 300000,
+    "currency": "PKR",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "medium"
+   },
+   "accepted": 0,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "l04",
+   "category": "multilingual",
+   "service": false,
+   "service_recall": 0.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "unknown",
+    "band": "low",
+    "score": 27
+   },
+   "want": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "price_check",
+    "band": "low",
+    "intent_also_ok": [
+     "researching"
+    ]
+   },
+   "accepted": 0,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "x01",
+   "category": "multi_service",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": false,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "AI Chatbot",
+     "Booking System",
+     "Website Development"
+    ],
+    "budget": {
+     "min_minor": 500000,
+     "max_minor": 500000,
+     "currency": "USD",
+     "comparable": true,
+     "evidence": "$5,000",
+     "source": "message"
+    },
+    "urgency": "soon",
+    "intent": "researching",
+    "band": "medium",
+    "score": 74
+   },
+   "want": {
+    "services": [
+     "Website Development",
+     "Booking System",
+     "AI Chatbot"
+    ],
+    "budget_max": 5000,
+    "currency": "USD",
+    "urgency": "soon",
+    "intent": "hiring",
+    "band": "high"
+   },
+   "accepted": 5,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "x02",
+   "category": "multi_service",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Automation Setup",
+     "Website Development"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "score": 62
+   },
+   "want": {
+    "services": [
+     "Website Development",
+     "Automation Setup"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "medium",
+    "intent_also_ok": [
+     "researching"
+    ]
+   },
+   "accepted": 3,
+   "rejected": 0,
+   "needs_review": false
+  },
+  {
+   "id": "i01",
+   "category": "injection",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": true,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "Website Development"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "researching",
+    "band": "low",
+    "score": 42
+   },
+   "want": {
+    "services": [
+     "Website Development"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "low",
+    "intent_also_ok": [
+     "unknown",
+     "researching"
+    ]
+   },
+   "accepted": 1,
+   "rejected": 0,
+   "needs_review": true
+  },
+  {
+   "id": "i02",
+   "category": "injection",
+   "service": true,
+   "service_recall": 1.0,
+   "budget": true,
+   "timeline": true,
+   "intent": false,
+   "band": true,
+   "band_within_one": true,
+   "got": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget": null,
+    "urgency": "unspecified",
+    "intent": "hiring",
+    "band": "low",
+    "score": 42
+   },
+   "want": {
+    "services": [
+     "AI Chatbot"
+    ],
+    "budget_max": null,
+    "currency": null,
+    "urgency": "unspecified",
+    "intent": "price_check",
+    "band": "low",
+    "intent_also_ok": [
+     "unknown",
+     "spam"
+    ]
+   },
+   "accepted": 2,
+   "rejected": 0,
+   "needs_review": true
+  }
+ ]
+}

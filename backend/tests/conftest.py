@@ -13,6 +13,8 @@ from pathlib import Path
 
 # Tests sign their own JWTs; CI has no .env, so give a test-only secret when none is configured.
 os.environ.setdefault("APP_SECRET_KEY", "test-only-secret-not-for-real-use-0123456789abcdef")
+# Tests never call a paid or rate-limited API: the offline provider runs the same pipeline.
+os.environ["AI_PROVIDER"] = "fake"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -117,7 +119,8 @@ def client(db: Session) -> Iterator[TestClient]:
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limiter() -> None:
-    from app.api.deps import login_limiter, public_form_limiter
+    from app.api.deps import ai_limiter, login_limiter, public_form_limiter
 
     public_form_limiter._hits.clear()
     login_limiter._hits.clear()
+    ai_limiter._hits.clear()

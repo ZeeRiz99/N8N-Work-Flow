@@ -40,7 +40,7 @@ export function AiStatusPill({ status }: { status: AiStatus }) {
   const style = busy
     ? { background: "#E6F0FA", color: "#1F4E79" }
     : { background: "#FFE9D6", color: "#8A3B00" };
-  const label = busy ? "AI processing" : status === "failed" ? "AI failed, will retry" : "Skipped";
+  const label = busy ? "AI processing" : status === "failed" ? "AI unavailable" : "Skipped";
   return (
     <span
       className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold"

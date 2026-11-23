@@ -157,6 +157,7 @@ class RateLimiter:
 
 public_form_limiter = RateLimiter()
 login_limiter = RateLimiter()
+ai_limiter = RateLimiter()  # interactive AI calls (playground, Q&A, drafts) per user
 
 
 def public_form_rate_limit(request: Request) -> None:

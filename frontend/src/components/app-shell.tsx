@@ -43,7 +43,7 @@ const NAV: { label: string; href?: string; icon: ReactNode }[] = [
       </>
     ),
   },
-  { label: "AI Assistant", icon: <path d="M4 5h16v11H9l-5 4z" /> },
+  { label: "AI Assistant", href: "/assistant", icon: <path d="M4 5h16v11H9l-5 4z" /> },
   {
     label: "Automation",
     icon: (
@@ -56,7 +56,11 @@ const NAV: { label: string; href?: string; icon: ReactNode }[] = [
     ),
   },
   { label: "Analytics", icon: <path d="M5 20v-9M12 20V5M19 20v-6" /> },
-  { label: "Settings", icon: <path d="M4 7h10M18 7h2M4 17h2M10 17h10" /> },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />,
+  },
 ];
 
 function Icon({ children }: { children: ReactNode }) {

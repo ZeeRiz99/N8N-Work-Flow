@@ -32,11 +32,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         worker = OutboxWorker(get_session_factory(), settings)
         worker.start()
     app.state.outbox = worker
+    retry = None
+    if settings.ai_retry_enabled:
+        from app.services.analysis import AIRetryWorker
+
+        retry = AIRetryWorker(get_session_factory(), settings.ai_retry_poll_seconds)
+        retry.start()
     try:
         yield
     finally:
         if worker is not None:
             worker.stop()
+        if retry is not None:
+            retry.stop()
 
 
 def create_app() -> FastAPI:

@@ -57,6 +57,7 @@ class Lead(IdMixin, TimestampMixin, Base):
     priority: Mapped[str] = mapped_column(String(10), server_default=text("'unscored'"))
     score: Mapped[int | None] = mapped_column()
     score_provisional: Mapped[bool] = mapped_column(server_default=text("false"))
+    needs_review: Mapped[bool] = mapped_column(server_default=text("false"))
     score_source: Mapped[str | None] = mapped_column(String(20))  # "fake" in P3
     ai_status: Mapped[str] = mapped_column(String(12), server_default=text("'pending'"))
     first_inquiry_at: Mapped[datetime] = mapped_column(
