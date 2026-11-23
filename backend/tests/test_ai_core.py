@@ -44,6 +44,11 @@ AMIRA = (
         ("3 lakh rupees", 30_000_000, 30_000_000, "PKR"),
         ("€1.5k", 150_000, 150_000, "EUR"),
         ("2000 USDT", 200_000, 200_000, "USDT"),
+        ("4.000 EUR", 400_000, 400_000, "EUR"),  # European thousands separator
+        ("3 lakh", 30_000_000, 30_000_000, "PKR"),  # lakh without a currency word is rupees
+        ("1.5 lac rupay", 15_000_000, 15_000_000, "PKR"),  # Roman Urdu
+        ("I need 2 pages, budget $2,000", 200_000, 200_000, "USD"),  # small number skipped
+        ("$2,000.50", 200_050, 200_050, "USD"),
     ],
 )
 def test_parse_money(text, lo, hi, cur):

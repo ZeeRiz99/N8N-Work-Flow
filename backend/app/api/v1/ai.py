@@ -126,3 +126,10 @@ def put_scoring(body: ScoringIn, user: AdminDep, db: DbSession) -> dict:
     db.add(cfg)
     db.commit()
     return _config_out(cfg)
+
+
+@router.post("/settings/scoring/rescore")
+def rescore(user: AdminDep, db: DbSession) -> dict:
+    """Recompute all open leads with the active config, from stored analyses (no AI call)."""
+    changed = analysis.rescore_org(db, user.organization_id, user.user_id)
+    return {"changed": changed, "version": analysis.active_config(db, user.organization_id).version}

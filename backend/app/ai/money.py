@@ -23,6 +23,9 @@ CURRENCY_WORDS = {
     "rs.": "PKR",
     "rupees": "PKR",
     "rupee": "PKR",
+    "rupay": "PKR",
+    "rupaye": "PKR",
+    "rupiya": "PKR",
     "€": "EUR",
     "eur": "EUR",
     "euro": "EUR",
@@ -52,11 +55,15 @@ MULTIPLIERS = {
     "crore": 10_000_000,
 }
 
-_NUM = r"(\d{1,3}(?:[,\s]\d{3})+|\d+(?:\.\d+)?)"
+# 2,000 / 2 000 / 4.000 (European grouping: dot followed by exactly three digits) / 2.5
+_NUM = r"(\d{1,3}(?:[,\s]\d{3})+(?:\.\d+)?|\d{1,3}(?:\.\d{3})+(?![\d.])|\d+(?:\.\d+)?)"
+_EURO_GROUPED = re.compile(r"\d{1,3}(?:\.\d{3})+")
+SOUTH_ASIAN = {"lakh", "lac", "lakhs", "crore"}
 _MULT = r"(k|thousand|m|million|lakhs?|lac|crore)?"
+# Word currencies must stand alone: "years 2000" is not "rs 2000", "2000 solutions" is not SOL.
 _CUR = (
-    r"(\$|us\$|usdt|usdc|usd|dollars?|pkr|rs\.?|rupees?|€|eur|euros?|£|gbp|pounds"
-    r"|aed|sar|inr|cad|aud|btc|bitcoin|eth|ether|sol)"
+    r"(?<![a-z])(\$|us\$|usdt|usdc|usd|dollars?|pkr|rs\.?|rupees?|rupaye?|rupiya|€|eur|euros?"
+    r"|£|gbp|pounds|aed|sar|inr|cad|aud|btc|bitcoin|eth|ether|sol)(?![a-z])"
 )
 _AMOUNT = re.compile(rf"(?:{_CUR}\s*)?{_NUM}\s*{_MULT}\b\s*(?:{_CUR})?", re.IGNORECASE)
 _RANGE_SEP = re.compile(r"\s*(?:-|–|—|to|and)\s*", re.IGNORECASE)
@@ -79,6 +86,8 @@ class Money:
 
 
 def _to_number(num: str, mult: str | None) -> float:
+    if _EURO_GROUPED.fullmatch(num):
+        num = num.replace(".", "")
     value = float(re.sub(r"[,\s]", "", num))
     if mult:
         value *= MULTIPLIERS[mult.lower()]
@@ -101,11 +110,28 @@ def parse_money(
     """
     if not text:
         return None
-    matches = [
-        m for m in _AMOUNT.finditer(text) if not strict or m.group(1) or m.group(3) or m.group(4)
-    ]
-    if not matches:
+    found = list(_AMOUNT.finditer(text))
+
+    def unit(m: re.Match) -> bool:
+        return bool(m.group(1) or m.group(3) or m.group(4))
+
+    def joined(a: re.Match, b: re.Match) -> bool:
+        between = text[a.end() : b.start()]
+        return bool(_RANGE_SEP.fullmatch(between)) or between.strip() in ("", "-", "–")
+
+    def usable(i: int) -> bool:
+        m = found[i]
+        if unit(m):
+            return True
+        # "2-3k": a bare number that starts a range whose other end has the unit.
+        if i + 1 < len(found) and joined(m, found[i + 1]) and unit(found[i + 1]):
+            return True
+        return not strict and _to_number(m.group(2), None) >= 100  # "2 pages" is no budget
+
+    start = next((i for i in range(len(found)) if usable(i)), None)
+    if start is None:
         return None
+    matches = found[start:]
     first = matches[0]
     cur = first.group(1) or first.group(4)
     amounts = [(first.group(2), first.group(3))]
@@ -119,7 +145,14 @@ def parse_money(
             # "2-3k": the multiplier on the second number applies to both.
             if amounts[1][1] and not amounts[0][1]:
                 amounts[0] = (amounts[0][0], amounts[1][1])
-    currency = CURRENCY_WORDS.get(cur.lower(), None) if cur else default_currency
+    mults = {(m or "").lower() for _, m in amounts}
+    if cur:
+        currency = CURRENCY_WORDS.get(cur.lower(), None)
+    elif mults & SOUTH_ASIAN:
+        # "3 lakh" with no currency word is rupees, never dollars.
+        currency = "INR" if default_currency == "INR" else "PKR"
+    else:
+        currency = default_currency
     values = [_to_number(n, m) for n, m in amounts]
     # Bare small numbers without currency or multiplier ("3 pages", "2 weeks") are not budgets.
     if not cur and not any(m for _, m in amounts) and max(values) < 100:

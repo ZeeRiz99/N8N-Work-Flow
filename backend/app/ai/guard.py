@@ -37,6 +37,22 @@ INJECTION_PATTERNS = [
     ),
     (r"<\s*/?\s*(system|assistant|instructions?)\s*>|\[\s*(system|inst)\s*\]", "fake_markup"),
     (r"\b(send|email|forward)\b.{0,40}\b(to|at)\b.{0,40}@", "action_request"),
+    (
+        r"\b(rate|give|set|assign|make)\b.{0,30}\b(max(imum)?|highest|top)\b.{0,15}"
+        r"\b(priority|score|rating)\b",
+        "score_manipulation",
+    ),
+    (
+        r"\b(note|message|instructions?)\s+(to|for)\s+the\s+(ai|assistant|model|bot|llm)\b",
+        "addresses_the_model",
+    ),
+    # Text shaped like our output schema: an attempt to pre-fill the model's answer.
+    (
+        r"\"(assessment|extraction|intent|buying_signals|service_interest|score|priority)\"\s*:",
+        "schema_injection",
+    ),
+    # A bracketed note about "the customer" posing as a system annotation.
+    (r"\[[^\]]{0,200}\bthe\s+(customer|lead|client)('s)?\b[^\]]{0,200}\]", "fake_annotation"),
 ]
 _COMPILED = [(re.compile(p, re.IGNORECASE | re.DOTALL), name) for p, name in INJECTION_PATTERNS]
 

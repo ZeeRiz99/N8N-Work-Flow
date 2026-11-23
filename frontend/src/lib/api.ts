@@ -342,6 +342,14 @@ export const api = {
   analysis: (id: string) => request<LeadAnalysis>(`${lead(id)}/analysis`),
   reanalyze: (id: string) => request<unknown>(`${lead(id)}/reanalyze`, { method: "POST" }),
   scoring: () => request<ScoringConfig>("/api/v1/settings/scoring"),
+  sampleStatus: () =>
+    request<{ available: boolean; sample_leads: number }>("/api/v1/org/sample-data"),
+  loadSample: (count: number) =>
+    request<{ leads: number; duplicate_pairs: number; sample_leads: number }>(
+      "/api/v1/org/sample-data",
+      json({ count }),
+    ),
+  clearSample: () => request<{ removed: number }>("/api/v1/org/sample-data", { method: "DELETE" }),
   saveScoring: (body: {
     weights: Record<string, number>;
     thresholds: { high_min: number; medium_min: number };

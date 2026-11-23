@@ -307,10 +307,73 @@ def seed_portfolio() -> int:
     return 0
 
 
+def sample_data() -> int:
+    """Load (or --clear) fictional sample leads into one organization or all of them."""
+    import argparse
+
+    from app.models import OrganizationMember, User
+    from app.services import sample_data as sd
+
+    ap = argparse.ArgumentParser(prog="app.cli sample-data")
+    who = ap.add_mutually_exclusive_group(required=True)
+    who.add_argument("--email", help="an owner/admin login: loads into their organization")
+    who.add_argument("--org", help="organization slug")
+    who.add_argument("--all", action="store_true", help="every organization")
+    ap.add_argument("--count", type=int, default=40)
+    ap.add_argument("--clear", action="store_true", help="remove sample leads instead")
+    ap.add_argument(
+        "--ai",
+        choices=["offline", "gemini"],
+        default="offline",
+        help="offline (default, no quota) or the configured Gemini key",
+    )
+    args = ap.parse_args(sys.argv[2:])
+    if not 1 <= args.count <= 500:
+        print("--count must be between 1 and 500.")
+        return 2
+
+    provider = None
+    if args.ai == "gemini":
+        from app.services.analysis import get_provider
+
+        provider = get_provider()
+    with get_session_factory()() as db:
+        author = None
+        if args.email:
+            row = db.execute(
+                select(Organization, User.id)
+                .join(OrganizationMember, OrganizationMember.organization_id == Organization.id)
+                .join(User, User.id == OrganizationMember.user_id)
+                .where(User.email == args.email)
+            ).first()
+            if row is None:
+                print(f"No organization found for {args.email}.")
+                return 1
+            orgs, author = [row[0]], row[1]
+        elif args.org:
+            orgs = list(db.scalars(select(Organization).where(Organization.slug == args.org)))
+        else:
+            orgs = list(db.scalars(select(Organization)))
+        if not orgs:
+            print("No matching organization.")
+            return 1
+        for org in orgs:
+            if args.clear:
+                print(f"{org.slug}: removed {sd.clear(db, org.id)} sample leads.")
+            else:
+                out = sd.load(db, org, args.count, provider, author_id=author)
+                print(
+                    f"{org.slug}: added {out['leads']} sample leads, "
+                    f"{out['duplicate_pairs']} duplicate pairs to review."
+                )
+    return 0
+
+
 COMMANDS = {
     "seed-demo": seed_demo,
     "set-demo-owner": set_demo_owner,
     "seed-portfolio": seed_portfolio,
+    "sample-data": sample_data,
 }
 
 if __name__ == "__main__":

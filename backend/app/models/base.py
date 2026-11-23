@@ -1,7 +1,8 @@
 """Declarative base, naming conventions and shared columns."""
 
+import threading
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import DateTime, MetaData, func, text
 from sqlalchemy.dialects.postgresql import UUID
@@ -16,6 +17,22 @@ NAMING_CONVENTION = {
 }
 
 
+_clock_lock = threading.Lock()
+_last_ts: datetime | None = None
+
+
+def utcnow() -> datetime:
+    """Strictly increasing UTC time for row timestamps. Postgres now() is the transaction start,
+    so rows written in one transaction would tie and "latest" queries would pick at random."""
+    global _last_ts
+    with _clock_lock:
+        t = datetime.now(UTC)
+        if _last_ts is not None and t <= _last_ts:
+            t = _last_ts + timedelta(microseconds=1)
+        _last_ts = t
+        return t
+
+
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
@@ -28,7 +45,7 @@ class IdMixin:
 
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True), default=utcnow, server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False

@@ -163,3 +163,56 @@ def test_gemini_without_key_degrades_gracefully(db, org, catalog, monkeypatch):
     monkeypatch.setattr(s, "gemini_api_key", "")
     out = analysis.analyze_lead(db, org.id, make_lead(db, org, message=MSG + " (v2)").id)
     assert out["ai_status"] == "failed" and out["provisional"] is True
+
+
+def test_rescore_applies_new_weights_without_calling_the_ai(db, org, catalog, monkeypatch):
+    lead = make_lead(db, org)
+    first = analysis.analyze_lead(db, org.id, lead.id)
+    cfg = analysis.active_config(db, org.id)
+    cfg.is_active = False
+    db.flush()
+    db.add(
+        ScoringConfig(
+            organization_id=org.id,
+            version=2,
+            weights=cfg.weights,
+            thresholds={"high_min": 99, "medium_min": 98},
+            is_active=True,
+        )
+    )
+    db.flush()
+    monkeypatch.setattr(analysis, "get_provider", lambda: Broken())  # must not be used
+    assert analysis.rescore_org(db, org.id) == 1
+    db.refresh(lead)
+    assert lead.score == first["score"] and lead.priority == "low"
+    _, s = analysis.latest(db, lead.id)
+    assert s.config_version == 2
+
+
+def test_failed_lead_is_retried_after_backoff_then_recovers(db, org, catalog, monkeypatch):
+    from datetime import UTC, datetime, timedelta
+
+    monkeypatch.setattr(analysis, "get_provider", lambda: Broken())
+    lead = make_lead(db, org)
+    analysis.analyze_lead(db, org.id, lead.id)
+    now = datetime.now(UTC)
+    assert analysis.due_for_retry(db, now) == []  # inside the 5-minute backoff
+    later = now + timedelta(minutes=6)
+    assert [x.id for x in analysis.due_for_retry(db, later)] == [lead.id]
+    assert analysis.retry_failed(db, later) == 0  # still down: one try, then stop
+    assert analysis.due_for_retry(db, later) == []  # second failure: wait 10 minutes
+    monkeypatch.undo()
+    assert analysis.retry_failed(db, later + timedelta(minutes=11)) == 1
+    db.refresh(lead)
+    assert lead.ai_status == "done" and lead.score_provisional is False
+
+
+def test_retry_gives_up_after_max_attempts(db, org, catalog, monkeypatch):
+    from datetime import UTC, datetime, timedelta
+
+    monkeypatch.setattr(analysis, "get_provider", lambda: Broken())
+    lead = make_lead(db, org)
+    for _ in range(analysis.RETRY_MAX_ATTEMPTS):
+        analysis.analyze_lead(db, org.id, lead.id, force=True)
+    far = datetime.now(UTC) + timedelta(days=2)
+    assert analysis.due_for_retry(db, far) == []

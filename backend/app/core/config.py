@@ -64,6 +64,8 @@ class Settings(BaseSettings):
     gemini_model_fallback: str = ""
     ai_timeout_seconds: float = 30.0
     ai_daily_call_cap: int = 500  # per organization; past it, leads get a provisional score
+    ai_retry_enabled: bool = True  # retry failed analyses with backoff (never drop a lead)
+    ai_retry_poll_seconds: float = 60.0
 
     @property
     def gemini_models(self) -> tuple[str, str]:

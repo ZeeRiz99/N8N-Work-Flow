@@ -9,7 +9,6 @@
 - Idempotent: analyzing a lead that is already done returns the stored result unless forced.
 """
 
-import hashlib
 import logging
 import uuid
 from datetime import UTC, datetime, time
@@ -18,8 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.ai.fake_provider import FakeAIProvider
-from app.ai.grounding import Grounded, ground
-from app.ai.guard import screen
+from app.ai.pipeline import LeadFacts, assess, prepare
 from app.ai.prompts import analysis_v1 as prompt
 from app.ai.provider import AIInvalidOutput, AIProvider, AIResult, AIUnavailable
 from app.ai.schemas import AnalysisOutput
@@ -34,7 +32,7 @@ from app.models import (
     ScoringConfig,
     Service,
 )
-from app.scoring.engine import DEFAULT_THRESHOLDS, DEFAULT_WEIGHTS, ScoreInput, score
+from app.scoring.engine import DEFAULT_THRESHOLDS, DEFAULT_WEIGHTS
 from app.services.activity import record
 
 log = logging.getLogger(__name__)
@@ -112,8 +110,13 @@ def _catalog(db: Session, org_id: uuid.UUID) -> list[dict]:
 
 
 def analyze_lead(
-    db: Session, org_id: uuid.UUID, lead_id: uuid.UUID, force: bool = False
+    db: Session,
+    org_id: uuid.UUID,
+    lead_id: uuid.UUID,
+    force: bool = False,
+    provider: AIProvider | None = None,
 ) -> dict | None:
+    """provider: override the configured provider (sample data uses the offline one)."""
     lead = db.scalar(select(Lead).where(Lead.id == lead_id, Lead.organization_id == org_id))
     if lead is None:
         return None
@@ -138,18 +141,15 @@ def analyze_lead(
     lead.ai_status = "processing"
     db.flush()
 
-    guard = screen(inquiry.message if inquiry else "")
     form = (inquiry.form_fields if inquiry else {}) or {}
-    user = prompt.build_user(guard.text, form, [c["name"] for c in catalog], org.name)
-    input_hash = hashlib.sha256(
-        f"{prompt.PROMPT_VERSION}\n{prompt.SYSTEM}\n{user}".encode()
-    ).hexdigest()
-    has_text = bool(guard.text.strip())
+    prep = prepare(inquiry.message if inquiry else "", form, catalog, org.name)
+    guard, user, input_hash = prep.guard, prep.user_prompt, prep.input_hash
+    has_text = prep.has_text
 
     output: AnalysisOutput | None = None
     run: AIResult | None = None
     error: str | None = None
-    provider = _provider_or_error()
+    provider = provider or _provider_or_error()
     provider_name = provider.name if not isinstance(provider, str) else get_settings().ai_provider
     cached = db.scalar(
         select(LeadAnalysis)
@@ -185,11 +185,19 @@ def analyze_lead(
             log.warning("ai_analysis_failed lead=%s error=%s", lead.id, error)
 
     org_currency = org.currency or "USD"
-    grounded = (
-        ground(output, guard.text, form, catalog, org_currency)
-        if output
-        else _basic(form, org_currency)
+    lead_facts = LeadFacts(lead.full_name, lead.email, lead.phone_raw, lead.company, inquiry_count)
+    done = assess(
+        output,
+        prep,
+        form,
+        catalog,
+        org_currency,
+        lead_facts,
+        cfg.weights,
+        cfg.thresholds,
+        cfg.ideal_customer,
     )
+    grounded, res, needs_review = done.grounded, done.result, done.needs_review
     status = "done" if output else ("failed" if has_text else "skipped")
     analysis = LeadAnalysis(
         organization_id=org_id,
@@ -223,50 +231,8 @@ def analyze_lead(
     db.add(analysis)
     db.flush()
 
-    b = grounded.budget
-    inp = ScoreInput(
-        services=grounded.services,
-        budget_min_minor=b.min_minor if b else None,
-        budget_max_minor=b.max_minor if b else None,
-        budget_comparable=bool(b and b.comparable_currency == _comparable(org_currency)),
-        budget_evidence=grounded.budget_evidence,
-        intent=output.assessment.intent if output else "unknown",
-        urgency=grounded.urgency,
-        urgency_evidence=grounded.timeline_evidence,
-        buying_signals=grounded.buying_signals,
-        has_name=bool(lead.full_name and lead.full_name.strip()),
-        has_valid_email=bool(lead.email and "@" in lead.email),
-        has_phone=bool(lead.phone_raw),
-        has_company=bool(lead.company or grounded.company),
-        meaningful_message=len(guard.text.split()) >= 8,
-        has_timeline=grounded.timeline_source is not None,
-        inquiry_count=inquiry_count,
-        email=lead.email,
-        industry=grounded.industry,
-        injection_flags=guard.flags,
-        provisional=output is None,
-    )
-    res = score(inp, catalog, cfg.weights, cfg.thresholds, cfg.ideal_customer)
-    needs_review = res.needs_review or guard.needs_review
-    db.add(
-        LeadScore(
-            organization_id=org_id,
-            lead_id=lead.id,
-            analysis_id=analysis.id,
-            total=res.total,
-            band=res.band,
-            breakdown=[dict(f.__dict__) for f in res.factors],
-            explanation=res.explanation,
-            caps=res.caps,
-            config_version=cfg.version,
-            provisional=res.provisional,
-            needs_review=needs_review,
-        )
-    )
-    lead.score, lead.priority = res.total, res.band
+    _save_score(db, org_id, lead, analysis.id, res, needs_review, cfg.version)
     lead.score_source = analysis.provider if output else "rules"
-    lead.score_provisional = res.provisional
-    lead.needs_review = needs_review
     lead.ai_status = status
     record(
         db,
@@ -282,15 +248,6 @@ def analyze_lead(
     _advance_stage(db, org_id, lead)
     db.commit()
     return result_dict(db, lead)
-
-
-def _comparable(currency: str) -> str:
-    return "USD" if currency in {"USD", "USDT", "USDC"} else currency
-
-
-def _basic(form: dict, org_currency: str) -> Grounded:
-    """No usable model output: only trusted form choices count."""
-    return ground(AnalysisOutput(), "", form, [], org_currency)
 
 
 def _advance_stage(db: Session, org_id: uuid.UUID, lead: Lead) -> None:
@@ -348,3 +305,175 @@ def result_dict(db: Session, lead: Lead) -> dict:
         "summary": a.summary if a else None,
         "explanation": s.explanation if s else None,
     }
+
+
+# ---------------------------------------------------------------- re-score (no AI call)
+
+
+def rescore_org(db: Session, org_id: uuid.UUID, actor_id: uuid.UUID | None = None) -> int:
+    """Recompute every open lead's score with the active scoring config from its latest stored
+    analysis. No AI call is made; a lead whose last analysis failed stays provisional."""
+    org = db.get(Organization, org_id)
+    catalog = _catalog(db, org_id)
+    cfg = active_config(db, org_id)
+    leads = db.scalars(
+        select(Lead).where(Lead.organization_id == org_id, Lead.archived_at.is_(None))
+    ).all()
+    changed = 0
+    for lead in leads:
+        a, _ = latest(db, lead.id)
+        if a is None or a.status == "skipped":
+            continue
+        inquiry = db.scalar(
+            select(LeadInquiry)
+            .where(LeadInquiry.lead_id == lead.id)
+            .order_by(LeadInquiry.received_at.desc())
+            .limit(1)
+        )
+        count = db.scalar(
+            select(func.count()).select_from(LeadInquiry).where(LeadInquiry.lead_id == lead.id)
+        )
+        form = (inquiry.form_fields if inquiry else {}) or {}
+        prep = prepare(inquiry.message if inquiry else "", form, catalog, org.name)
+        output = (
+            AnalysisOutput.model_validate(
+                {"extraction": a.extracted.get("raw", {}), "assessment": a.assessment}
+            )
+            if a.status == "done"
+            else None
+        )
+        facts = LeadFacts(lead.full_name, lead.email, lead.phone_raw, lead.company, count or 1)
+        done = assess(
+            output,
+            prep,
+            form,
+            catalog,
+            org.currency or "USD",
+            facts,
+            cfg.weights,
+            cfg.thresholds,
+            cfg.ideal_customer,
+        )
+        res = done.result
+        before = (lead.score, lead.priority)
+        _save_score(db, org_id, lead, a.id, res, done.needs_review, cfg.version)
+        if before != (res.total, res.band):
+            changed += 1
+            record(
+                db,
+                org_id,
+                lead.id,
+                "rescored",
+                "user" if actor_id else "system",
+                actor_id,
+                from_score=before[0],
+                score=res.total,
+                band=res.band,
+                config_version=cfg.version,
+            )
+    db.commit()
+    return changed
+
+
+def _save_score(db, org_id, lead, analysis_id, res, needs_review: bool, config_version: int):
+    db.add(
+        LeadScore(
+            organization_id=org_id,
+            lead_id=lead.id,
+            analysis_id=analysis_id,
+            total=res.total,
+            band=res.band,
+            breakdown=[dict(f.__dict__) for f in res.factors],
+            explanation=res.explanation,
+            caps=res.caps,
+            config_version=config_version,
+            provisional=res.provisional,
+            needs_review=needs_review,
+        )
+    )
+    lead.score, lead.priority = res.total, res.band
+    lead.score_provisional = res.provisional
+    lead.needs_review = needs_review
+
+
+# ---------------------------------------------------------------- automatic retry
+
+
+RETRY_BASE_MINUTES = 5
+RETRY_MAX_DELAY_MINUTES = 360
+RETRY_MAX_ATTEMPTS = 8  # about 16 hours of backoff: covers a free-tier daily quota reset
+
+
+def retry_delay_minutes(failures: int) -> int:
+    return min(RETRY_BASE_MINUTES * 2 ** max(failures - 1, 0), RETRY_MAX_DELAY_MINUTES)
+
+
+def due_for_retry(db: Session, now: datetime | None = None, limit: int = 50) -> list[Lead]:
+    """Failed leads whose backoff has passed. Free-tier limits are handled by queueing (§8.7):
+    a failed lead is never dropped, it is retried with growing gaps, then left for a human."""
+    now = now or datetime.now(UTC)
+    due = []
+    leads = db.scalars(
+        select(Lead)
+        .where(Lead.ai_status == "failed", Lead.archived_at.is_(None))
+        .order_by(Lead.last_interaction_at.desc())
+        .limit(limit)
+    ).all()
+    for lead in leads:
+        runs = db.scalars(
+            select(LeadAnalysis)
+            .where(LeadAnalysis.lead_id == lead.id)
+            .order_by(LeadAnalysis.created_at.desc())
+            .limit(RETRY_MAX_ATTEMPTS + 1)
+        ).all()
+        failures = 0
+        for r in runs:
+            if r.status != "failed":
+                break
+            failures += 1
+        if not runs or failures >= RETRY_MAX_ATTEMPTS:
+            continue
+        wait = retry_delay_minutes(failures)
+        if (now - runs[0].created_at).total_seconds() >= wait * 60:
+            due.append(lead)
+    return due
+
+
+def retry_failed(db: Session, now: datetime | None = None) -> int:
+    """Retry due leads; stop at the first one that fails again (the provider is still down,
+    so hammering it would only burn quota). Returns how many succeeded."""
+    ok = 0
+    for lead in due_for_retry(db, now):
+        out = analyze_lead(db, lead.organization_id, lead.id, force=True)
+        if not out or out["ai_status"] != "done":
+            break
+        ok += 1
+    return ok
+
+
+class AIRetryWorker:
+    """Background thread: every few minutes, retries failed analyses that are due."""
+
+    def __init__(self, session_factory, poll_seconds: float = 60.0) -> None:
+        import threading
+
+        self._factory, self._poll = session_factory, poll_seconds
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, name="ai-retry", daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=5)
+
+    def _run(self) -> None:
+        while not self._stop.wait(self._poll):
+            try:
+                with self._factory() as db:
+                    n = retry_failed(db)
+                    if n:
+                        log.info("ai_retry recovered=%s", n)
+            except Exception:  # noqa: BLE001 - never let the worker die
+                log.exception("ai retry loop error")

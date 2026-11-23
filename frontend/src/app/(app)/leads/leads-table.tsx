@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { LoadSampleButton, RemoveSampleButton, useSampleData } from "./sample-data";
 import { AiStatusPill, PriorityBadge } from "@/components/badges";
 import { useSession } from "@/components/session";
 import { buttonPrimary, buttonSecondary, card, field, timeAgo } from "@/components/ui-tokens";
@@ -104,6 +105,7 @@ export function LeadsTable() {
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   const isAdmin = me.role === "owner" || me.role === "admin";
   const filtered = Boolean(filters.q || filters.stage || filters.priority || filters.source);
+  const sample = useSampleData(isAdmin);
 
   return (
     <div className="flex flex-col gap-5">
@@ -116,6 +118,7 @@ export function LeadsTable() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <RemoveSampleButton sample={sample} onDone={load} />
           <Link href="/leads/import" className={buttonSecondary}>
             Import CSV
           </Link>
@@ -210,6 +213,12 @@ export function LeadsTable() {
         </Select>
       </section>
 
+      {sample.message && (
+        <p role="status" className="rounded-lg bg-[#1A1D2B] px-4 py-2.5 text-sm text-white">
+          {sample.message}
+        </p>
+      )}
+
       {error && !data && (
         <div role="alert" className="rounded-xl border border-[#F2C2B5] bg-[#FEF6F3] p-5">
           <p className="font-semibold text-[#A32A12]">Could not load leads</p>
@@ -236,6 +245,7 @@ export function LeadsTable() {
               ? "Try a different search or clear the filters."
               : "Submit the public form, import a CSV, or add a lead by hand."}
           </p>
+          {!filtered && <LoadSampleButton sample={sample} onDone={load} />}
         </div>
       )}
 
