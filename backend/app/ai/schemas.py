@@ -78,3 +78,12 @@ class Assessment(Strict):
 class AnalysisOutput(Strict):
     extraction: Extraction = Field(default_factory=Extraction)
     assessment: Assessment = Field(default_factory=Assessment)
+
+
+class DraftOutput(Strict):
+    """A reply draft (master prompt §8.4). Code validates it and appends the opt-out line."""
+
+    subject: str = Field(max_length=120)
+    body: str = Field(max_length=3000, description="Plain text, no signature block, no links")
+    questions: list[str] = Field(default_factory=list, max_length=5)
+    services_mentioned: list[str] = Field(default_factory=list, max_length=3)

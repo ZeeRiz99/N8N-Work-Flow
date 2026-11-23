@@ -1,9 +1,9 @@
 """The AIProvider interface (D11, ADR 004). The pipeline only talks to this, never to an SDK."""
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
-from app.ai.schemas import AnalysisOutput
+from pydantic import BaseModel
 
 
 class AIUnavailable(Exception):
@@ -16,7 +16,7 @@ class AIInvalidOutput(Exception):
 
 @dataclass(frozen=True)
 class AIResult:
-    output: AnalysisOutput
+    output: Any  # the validated schema instance (AnalysisOutput, DraftOutput, ...)
     provider: str
     model: str
     latency_ms: int
@@ -28,3 +28,7 @@ class AIProvider(Protocol):
     name: str
 
     def analyze(self, system: str, user: str) -> AIResult: ...
+
+    def generate(
+        self, system: str, user: str, schema: type[BaseModel], temperature: float = 0
+    ) -> AIResult: ...

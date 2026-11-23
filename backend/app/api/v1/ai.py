@@ -1,6 +1,7 @@
 """AI analysis and scoring settings for logged-in members (master prompt §8, §10)."""
 
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,7 +17,7 @@ from app.scoring.engine import (
     ConfigError,
     validate_config,
 )
-from app.services import analysis
+from app.services import analysis, drafting
 from app.services.activity import record
 
 router = APIRouter(tags=["ai"], dependencies=[Depends(csrf_protect)])
@@ -133,3 +134,38 @@ def rescore(user: AdminDep, db: DbSession) -> dict:
     """Recompute all open leads with the active config, from stored analyses (no AI call)."""
     changed = analysis.rescore_org(db, user.organization_id, user.user_id)
     return {"changed": changed, "version": analysis.active_config(db, user.organization_id).version}
+
+
+# ---------------------------------------------------------------- reply drafts (preview, P5)
+
+
+class DraftIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    style: Literal["professional", "friendly", "concise", "sales"] = "professional"
+
+
+class DraftCheckIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    subject: str = Field(max_length=200)
+    body: str = Field(max_length=6000)
+    services_mentioned: list[str] = Field(default_factory=list, max_length=5)
+
+
+@router.post("/leads/{lead_id}/drafts/generate")
+def generate_draft(lead_id: uuid.UUID, body: DraftIn, user: UserDep, db: DbSession) -> dict:
+    """A reply draft with automatic checks. Nothing is saved or sent (approvals arrive in P6)."""
+    get_owned(db, Lead, lead_id, user.organization_id)
+    try:
+        return drafting.generate_draft(db, user.organization_id, lead_id, body.style, user.user_id)
+    except drafting.DraftRefused as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.post("/leads/{lead_id}/drafts/check")
+def check_draft(lead_id: uuid.UUID, body: DraftCheckIn, user: UserDep, db: DbSession) -> dict:
+    """Rerun the checks on an edited draft."""
+    get_owned(db, Lead, lead_id, user.organization_id)
+    checks = drafting.recheck(
+        db, user.organization_id, lead_id, body.subject, body.body, body.services_mentioned
+    )
+    return {"checks": checks, "all_passed": all(c["ok"] for c in checks if c["severity"] == "fail")}

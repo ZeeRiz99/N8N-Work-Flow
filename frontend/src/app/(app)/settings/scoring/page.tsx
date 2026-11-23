@@ -216,6 +216,28 @@ export default function ScoringSettingsPage() {
             >
               Reset to recommended
             </button>
+            <button
+              type="button"
+              className={buttonSecondary}
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setMessage(null);
+                try {
+                  const r = await api.rescore();
+                  setMessage({
+                    ok: true,
+                    text: `Re-scored existing leads with version ${r.version}: ${r.changed} changed. No AI calls were made.`,
+                  });
+                } catch (err) {
+                  setMessage({ ok: false, text: errorText(err) });
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Re-score existing leads
+            </button>
           </div>
         ) : (
           <p className="text-sm text-[#5A6075]">Only owners and admins can change scoring.</p>

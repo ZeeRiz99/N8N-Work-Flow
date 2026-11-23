@@ -114,6 +114,29 @@ export interface LeadAnalysis {
   } | null;
 }
 
+export interface DraftCheck {
+  key: string;
+  label: string;
+  ok: boolean;
+  severity: "fail" | "warn";
+  detail: string;
+}
+
+export interface Draft {
+  to: string | null;
+  subject: string;
+  body: string;
+  questions: string[];
+  services_mentioned: string[];
+  style: string;
+  source: string;
+  model: string | null;
+  prompt_version: string;
+  note: string | null;
+  checks: DraftCheck[];
+  all_passed: boolean;
+}
+
 export interface ScoringConfig {
   version: number;
   weights: Record<string, number>;
@@ -342,6 +365,17 @@ export const api = {
   analysis: (id: string) => request<LeadAnalysis>(`${lead(id)}/analysis`),
   reanalyze: (id: string) => request<unknown>(`${lead(id)}/reanalyze`, { method: "POST" }),
   scoring: () => request<ScoringConfig>("/api/v1/settings/scoring"),
+  rescore: () =>
+    request<{ changed: number; version: number }>("/api/v1/settings/scoring/rescore", {
+      method: "POST",
+    }),
+  generateDraft: (id: string, style: string) =>
+    request<Draft>(`${lead(id)}/drafts/generate`, json({ style })),
+  checkDraft: (id: string, subject: string, body: string, services_mentioned: string[]) =>
+    request<{ checks: DraftCheck[]; all_passed: boolean }>(
+      `${lead(id)}/drafts/check`,
+      json({ subject, body, services_mentioned }),
+    ),
   sampleStatus: () =>
     request<{ available: boolean; sample_leads: number }>("/api/v1/org/sample-data"),
   loadSample: (count: number) =>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { AnalysisPanel, ScorePanel, sourceLabel } from "./ai-panels";
+import { DraftPanel } from "./draft-panel";
 import { AiStatusPill, PriorityBadge } from "@/components/badges";
 import { useSession } from "@/components/session";
 import {
@@ -41,6 +42,10 @@ function describe(a: Activity): string {
       return `Scored ${p.score}, ${p.band} priority${p.provisional ? " (provisional)" : ""}`;
     case "reanalysis_requested":
       return "Re-analysis requested";
+    case "draft_generated":
+      return `Reply draft written (${p.style})`;
+    case "rescored":
+      return `Re-scored ${p.from_score ?? "?"} → ${p.score}`;
     case "stage_changed":
       return `Moved to ${p.to_label ?? p.to_stage}`;
     case "assigned":
@@ -292,6 +297,16 @@ export function LeadDetail() {
               }}
             />
           )}
+          <DraftPanel
+            leadId={lead.id}
+            disabled={
+              lead.do_not_contact
+                ? "This lead is marked do not contact."
+                : !lead.email
+                  ? "Add an email address to draft a reply."
+                  : undefined
+            }
+          />
           <section className={`${card} flex flex-col gap-3 p-6`}>
             <h2 className="text-base font-semibold">Messages</h2>
             {inquiries.length === 0 ? (

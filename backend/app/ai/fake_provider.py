@@ -88,3 +88,18 @@ class FakeAIProvider:
         out = AnalysisOutput.model_validate(data)
         ms = round((time.perf_counter() - start) * 1000)
         return AIResult(out, self.name, self.model, ms, 0, 0)
+
+    def generate(self, system: str, user: str, schema, temperature: float = 0) -> AIResult:
+        """Offline structured output for the non-analysis prompts (drafts, Q&A)."""
+        from app.ai.schemas import DraftOutput
+
+        start = time.perf_counter()
+        if schema is AnalysisOutput:
+            return self.analyze(system, user)
+        if schema is DraftOutput:
+            from app.ai.draft_template import template_draft
+            from app.ai.prompts.draft_v1 import extract_data
+
+            out = template_draft(extract_data(user))
+            return AIResult(out, self.name, self.model, round((time.perf_counter() - start) * 1000))
+        raise NotImplementedError(f"FakeAIProvider cannot produce {schema.__name__}")

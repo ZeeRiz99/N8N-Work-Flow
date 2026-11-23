@@ -9,7 +9,7 @@ import time
 
 from google import genai
 from google.genai import errors as genai_errors
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from app.ai.breaker import CircuitBreaker, gemini_breaker
 from app.ai.provider import AIInvalidOutput, AIResult, AIUnavailable
@@ -40,6 +40,13 @@ class GeminiProvider:
         self.breaker = breaker
 
     def analyze(self, system: str, user: str) -> AIResult:
+        return self.generate(system, user, AnalysisOutput)
+
+    def generate(
+        self, system: str, user: str, schema: type[BaseModel], temperature: float = 0
+    ) -> AIResult:
+        """One structured call: the reply must validate against `schema` (strict)."""
+        json_schema = _SCHEMA if schema is AnalysisOutput else schema.model_json_schema()
         if not self.breaker.allow():
             raise AIUnavailable("circuit open after repeated provider failures")
         last: Exception | None = None
@@ -55,8 +62,8 @@ class GeminiProvider:
                             "response_mime_type": "application/json",
                             # JSON Schema form: the SDK's typed form rejects the
                             # additionalProperties that our strict models emit.
-                            "response_json_schema": _SCHEMA,
-                            "temperature": 0,
+                            "response_json_schema": json_schema,
+                            "temperature": temperature,
                             "http_options": {"timeout": self.timeout_ms},
                         },
                     )
@@ -75,7 +82,7 @@ class GeminiProvider:
                     break
                 latency = round((time.perf_counter() - start) * 1000)
                 try:
-                    output = AnalysisOutput.model_validate_json(resp.text or "")
+                    output = schema.model_validate_json(resp.text or "")
                 except ValidationError as exc:
                     self.breaker.failure()
                     raise AIInvalidOutput(f"schema mismatch: {exc.error_count()} error(s)") from exc
