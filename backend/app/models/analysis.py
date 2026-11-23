@@ -1,8 +1,18 @@
 """AI analyses, score history and per-organization scoring configuration (master prompt §6, §8)."""
 
 import uuid
+from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, UniqueConstraint, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -98,3 +108,22 @@ class ScoringConfig(IdMixin, TimestampMixin, Base):
     ideal_customer: Mapped[dict] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
     is_active: Mapped[bool] = mapped_column(server_default=text("true"))
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+
+
+class ReportSnapshot(IdMixin, TimestampMixin, Base):
+    """A saved report: numbers from SQL, prose that passed the number validator (or a
+    template). One per organization, kind and period (master prompt §6, §8.5)."""
+
+    __tablename__ = "report_snapshots"
+    __table_args__ = (UniqueConstraint("organization_id", "kind", "period_start"),)
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE")
+    )
+    kind: Mapped[str] = mapped_column(String(30))  # daily | source_performance
+    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    metrics: Mapped[dict] = mapped_column(JSONB)
+    narrative: Mapped[str] = mapped_column(Text)
+    narrative_source: Mapped[str] = mapped_column(String(20))  # ai | template
+    validation: Mapped[dict] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))

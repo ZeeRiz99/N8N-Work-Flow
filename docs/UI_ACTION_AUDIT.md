@@ -8,7 +8,7 @@ Verified by: **J** `e2e/mvp-journey.spec.ts` (16-step journey, 3 runs from a cle
 (`scripts/ui-audit.ps1`, fails on any console error or HTTP 5xx) · **T** backend tests ·
 **S** `scripts/smoke.ps1` / `failure-injection.ps1`.
 
-Not built yet and labelled "Soon" in the sidebar (no dead links): Follow-ups, Analytics.
+All sidebar items are built (Follow-ups in P8, Analytics in P9).
 
 | Screen | Control | Expected result | By | Result |
 |---|---|---|---|---|
@@ -55,4 +55,14 @@ Not built yet and labelled "Soon" in the sidebar (no dead links): Follow-ups, An
 | Scoring | Weights, bands, industries | Total must be 100; save disabled otherwise | A, T | Pass |
 | Scoring | Save new version, Reset to recommended, Re-score existing leads | Versioned config; rescore without AI | A, T | Pass |
 | AI settings | Default style, daily limit, Save | Saved (admin), limit ≤ server cap | A, T | Pass |
+| Follow-ups (P8) | Tabs, Prepare now, Skip with reason, Review draft | Rules checked; draft to Approvals or skip with reason | A, T | Pass |
+| Lead detail (P8) | Customer replied, Schedule follow-up, Opt out | Logged; follow-ups stopped or scheduled; address suppressed | T, manual | Pass |
+| Duplicates (P8) | Keep this one… → merge preview → Confirm / Cancel | Shows result first; merges only on confirm | T, manual | Pass |
+| Analytics (P9) | Sources, Funnel, Team, Reports tabs; 30 / 90 days / 1 year; Export CSV | Figures equal raw SQL (reconcile tests) | A, T | Pass |
+| Analytics (P9) | Daily summary now, Source report now | Snapshot saved; numbers validated | T, manual | Pass |
+| Settings · Team (P9) | Role select, Remove, Invite (email, role), Copy link, Revoke | Audit rows; one open invite per address | T, manual | Pass |
+| Invite link (P9) | Name, password, Join the team | Account created (or verified), logged in | T, manual (browser) | Pass |
+| Settings · Pipeline (P9) | Rename, ↑ ↓, Remove (custom), Add stage | Saved; built-in stages cannot be removed | A, T | Pass |
+| Settings · Rules & data (P9) | Notifications, follow-up limits, retention, Erase now | Saved; only old archived leads erased | A, T | Pass |
+| Scoring (P9) | Preview on recent leads | Old vs new band, nothing saved | A, T | Pass |
 | Phone width | All screens at 390 px | Layout reflows, no horizontal page scroll | manual (P7 bug bash) | Pass |

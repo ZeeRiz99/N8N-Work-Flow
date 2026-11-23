@@ -4,17 +4,17 @@ The backend decides; n8n only sequences and delivers (D10).
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.api.deps import DbSession, ServiceOrg
 from app.core.config import get_settings
-from app.models import Lead, LeadInquiry, WorkflowExecution
+from app.models import Lead, LeadInquiry, ReportSnapshot, WorkflowExecution
 from app.services.analysis import analyze_lead
 from app.services.idempotency import claim_once
 from app.services.outbox import redispatch_failed
@@ -378,3 +378,61 @@ def internal_retry_ai(org: ServiceOrg, db: DbSession) -> dict:
     from app.services.analysis import requeue_stuck_leads, retry_failed
 
     return {"requeued_stuck": requeue_stuck_leads(db), "recovered": retry_failed(db)}
+
+
+# ---------------------------------------------------------------- W8, W10 reports
+
+
+@router.get("/reports/daily")
+def internal_daily_report(org: ServiceOrg, db: DbSession) -> dict:
+    """W8 (hourly): a report only when the organization's local time is 08:30-09:29 and today's
+    snapshot does not exist yet; otherwise {report: null}."""
+    from app.services import reports
+
+    now = datetime.now(UTC)
+    if not reports.daily_due(org, now):
+        return {"report": None}
+    before = db.scalar(
+        select(func.count())
+        .select_from(ReportSnapshot)
+        .where(ReportSnapshot.organization_id == org.id, ReportSnapshot.kind == "daily")
+    )
+    snap = reports.make_daily(db, org, now)
+    after = db.scalar(
+        select(func.count())
+        .select_from(ReportSnapshot)
+        .where(ReportSnapshot.organization_id == org.id, ReportSnapshot.kind == "daily")
+    )
+    if after == before:
+        return {"report": None}  # already sent today
+    link = f"{get_settings().frontend_public_url.rstrip('/')}/analytics"
+    return {"report": reports.as_email(snap, org, link)}
+
+
+@router.get("/reports/source-performance")
+def internal_source_report(org: ServiceOrg, db: DbSession) -> dict:
+    """W10 (hourly): weekly, Monday 08:30-09:29 local time, once."""
+    from app.services import reports
+
+    now = datetime.now(UTC)
+    if not reports.weekly_due(org, now):
+        return {"report": None}
+    before = db.scalar(
+        select(func.count())
+        .select_from(ReportSnapshot)
+        .where(
+            ReportSnapshot.organization_id == org.id, ReportSnapshot.kind == "source_performance"
+        )
+    )
+    snap = reports.make_source_performance(db, org, now)
+    after = db.scalar(
+        select(func.count())
+        .select_from(ReportSnapshot)
+        .where(
+            ReportSnapshot.organization_id == org.id, ReportSnapshot.kind == "source_performance"
+        )
+    )
+    if after == before:
+        return {"report": None}
+    link = f"{get_settings().frontend_public_url.rstrip('/')}/analytics"
+    return {"report": reports.as_email(snap, org, link)}

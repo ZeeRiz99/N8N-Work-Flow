@@ -2,6 +2,14 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-24: Phase 9 (analytics, reports, settings, team)
+
+- **Analytics:** `/analytics/sources`, `/funnel`, `/team`, `/export` and the Analytics page (Sources, Funnel, Team, Reports; 30/90/365 days; CSV). **Gate:** a test seeds 40 fictional leads and checks every Overview card, the trend, sources, funnel and team figures against independent raw SQL.
+- **Reports (W8 daily, W10 weekly sources):** SQL metrics saved as `report_snapshots`; once per period, in each organization's own 08:30–09:29 window. AI prose is kept only if every number in it is one of the metrics; otherwise a template is used (validator tests, incl. invented and derived numbers). Fixed on the way: the template's own "Last 7 days" was rejected until the period became a metric.
+- **Team:** invitations (hashed token, 7 days, one open per address, member or admin), accept page that creates or verifies the account and logs in, revoke, audit rows, invitation email via SMTP; role changes and removal in Settings · Team.
+- **Settings:** scoring preview on recent leads (nothing saved), pipeline editor, notification preferences, follow-up limits, data retention with erasure of old archived leads.
+- **Verified:** 302 backend tests; UI audit extended to every new page (no console or server errors); journey 1/1; live browser invite → accept.
+
 ## 2026-11-24: Phase 8 (follow-ups, duplicates, recovery)
 
 - **Contact rules in one place** (`services/followups.contact_check`): open stage, no reply logged, not do-not-contact, not on the suppression list, has an email, fewer than 3 emails, 3-day cooldown (attempts and cooldown configurable per org). Used by follow-up preparation, recovery, approval and the send claim; an address suppressed after approval cancels the send.

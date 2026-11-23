@@ -4,7 +4,7 @@ import { type FormEvent, useEffect, useState } from "react";
 
 import { useSession } from "@/components/session";
 import { buttonPrimary, buttonSecondary, card, field } from "@/components/ui-tokens";
-import { api, errorText, type ScoringConfig } from "@/lib/api";
+import { api, errorText, type ScorePreviewRow, type ScoringConfig } from "@/lib/api";
 
 const HELP: Record<string, string> = {
   budget_fit: "Their budget against your price range for the service they want.",
@@ -26,6 +26,9 @@ export default function ScoringSettingsPage() {
   const [industries, setIndustries] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<{ rows: ScorePreviewRow[]; band_changes: number } | null>(
+    null,
+  );
 
   function apply(c: ScoringConfig) {
     setCfg(c);
@@ -186,6 +189,62 @@ export default function ScoringSettingsPage() {
             />
           </div>
         </fieldset>
+
+        <section className={`${card} flex flex-col gap-3 p-6`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold">Preview before saving</h2>
+            <button
+              type="button"
+              className={buttonSecondary}
+              disabled={total !== 100 || !bandsOk}
+              onClick={async () => {
+                try {
+                  setPreview(
+                    await api.scoringPreview(weights, { high_min: high, medium_min: medium }),
+                  );
+                } catch (err) {
+                  setMessage({ ok: false, text: errorText(err) });
+                }
+              }}
+            >
+              Preview on recent leads
+            </button>
+          </div>
+          {preview && (
+            <>
+              <p className="text-sm text-[#3A4057]">
+                {preview.band_changes} of {preview.rows.length} recent leads would change priority.
+                Nothing is saved until you save a new version.
+              </p>
+              <div className="max-h-72 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-[#5A6075]">
+                      <th className="py-1 font-semibold">Lead</th>
+                      <th className="py-1 text-right font-semibold">Now</th>
+                      <th className="py-1 text-right font-semibold">With these settings</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.rows.map((r) => (
+                      <tr key={r.lead_id} className="border-t border-[#EEF0F6]">
+                        <td className="py-1.5">{r.name}</td>
+                        <td className="py-1.5 text-right tabular-nums">
+                          {r.old_score} · {r.old_band}
+                        </td>
+                        <td
+                          className={`py-1.5 text-right tabular-nums ${r.new_band !== r.old_band ? "font-semibold text-[#3730A3]" : ""}`}
+                        >
+                          {r.new_score} · {r.new_band}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
 
         {message && (
           <p

@@ -1,7 +1,7 @@
 """All models, imported here so Alembic sees every table."""
 
 from app.models.activity import AuditLog, LeadActivity, LeadNote
-from app.models.analysis import LeadAnalysis, LeadScore, ScoringConfig
+from app.models.analysis import LeadAnalysis, LeadScore, ReportSnapshot, ScoringConfig
 from app.models.base import Base
 from app.models.communication import (
     CommunicationDraft,
@@ -13,10 +13,18 @@ from app.models.crm import LeadSource, PipelineStage, Service
 from app.models.duplicates import DuplicateCandidate
 from app.models.leads import Lead, LeadInquiry
 from app.models.reliability import IdempotencyKey, OutboxEvent, WorkflowExecution
-from app.models.tenancy import ApiKey, Organization, OrganizationMember, RefreshToken, User
+from app.models.tenancy import (
+    ApiKey,
+    Invitation,
+    Organization,
+    OrganizationMember,
+    RefreshToken,
+    User,
+)
 
 __all__ = [
     "ApiKey",
+    "Invitation",
     "AuditLog",
     "Base",
     "DuplicateCandidate",
@@ -28,6 +36,7 @@ __all__ = [
     "FollowUp",
     "Suppression",
     "LeadAnalysis",
+    "ReportSnapshot",
     "LeadInquiry",
     "LeadNote",
     "LeadScore",

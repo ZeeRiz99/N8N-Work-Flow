@@ -62,7 +62,7 @@ const NAV: { label: string; href?: string; icon: ReactNode }[] = [
       </>
     ),
   },
-  { label: "Analytics", icon: <path d="M5 20v-9M12 20V5M19 20v-6" /> },
+  { label: "Analytics", href: "/analytics", icon: <path d="M5 20v-9M12 20V5M19 20v-6" /> },
   {
     label: "Integrations",
     href: "/integrations",

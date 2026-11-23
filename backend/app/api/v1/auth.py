@@ -1,5 +1,7 @@
 """Auth endpoints. Tokens live only in httpOnly cookies, never in the response body (D7)."""
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
@@ -162,3 +164,51 @@ def me(user: UserDep, db: DbSession) -> MeOut:
         organization_name=org.name,
         organization_slug=org.slug,
     )
+
+
+# ---------------------------------------------------------------- invitations (P9)
+
+
+class AcceptInviteIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    full_name: str = Field(default="", max_length=200)
+    password: str = Field(min_length=1, max_length=200)
+
+
+@router.get("/invitations/{token}")
+def invitation_info(token: str, db: DbSession) -> dict:
+    from app.models import Organization, User
+    from app.services import invitations
+
+    try:
+        inv = invitations.find(db, token)
+    except invitations.InviteError as exc:
+        raise HTTPException(410, str(exc)) from exc
+    org = db.get(Organization, inv.organization_id)
+    has_account = db.scalar(select(User.id).where(User.email == inv.email)) is not None
+    return {
+        "organization_name": org.name,
+        "email": inv.email,
+        "role": inv.role,
+        "has_account": has_account,
+    }
+
+
+@router.post(
+    "/invitations/{token}/accept", response_model=MeOut, dependencies=[Depends(login_rate_limit)]
+)
+def accept_invitation(token: str, body: AcceptInviteIn, response: Response, db: DbSession) -> MeOut:
+    """Join the team: creates the account (or verifies the existing one) and logs in."""
+    from app.services import invitations
+
+    try:
+        user, inv = invitations.accept(db, token, body.full_name, body.password)
+    except invitations.InviteError as exc:
+        db.rollback()
+        raise HTTPException(409, str(exc)) from exc
+    session, _ = auth_service._issue(
+        db, get_settings(), user.id, inv.organization_id, inv.role, uuid.uuid4()
+    )
+    db.commit()
+    _set_cookies(response, session)
+    return _me(db, user.id, inv.organization_id, inv.role, user.email, user.full_name)
