@@ -52,11 +52,12 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | # | Limit | Where | Fix later |
 |---|---|---|---|
 | 26 | ~~No automatic retry of failed analyses~~ **Fixed in P5:** retry worker with backoff (ADR 011) | `services/analysis.py` | Done |
-| 27 | The Gemini free tier has a small daily request quota (used up on 2026-11-23 after ~30 dev, smoke and seed calls); `AI_DAILY_CALL_CAP` defaults to 500, far above it | `.env`, `core/config.py` | Document the free-tier quota; lower the default cap; surface "AI quota reached" in the UI |
-| 28 | Portfolio shot `p5-04` (prompt injection) shows the fallback view because the quota ran out before that lead was analyzed | `docs/portfolio` | Re-run `seed-portfolio` + `portfolio-shots.mjs` after the quota resets |
+| 27 | ~~Free-tier quota exhausted in a day~~ **Fixed in P5:** shared daily Gemini budget (18, under the quota; `app/ai/budget.py`), daily-quota 429 not retried | `app/ai` | Done |
+| 28 | ~~p5-04 showed the fallback view~~ **Fixed:** re-shot with a live Gemini analysis | `docs/portfolio` | Done |
 | 29 | Re-score exists (P5), but there is no live preview of how leads would move before saving new weights | `/settings/scoring` | "Preview on recent leads" before saving |
 | 30 | Re-analyze runs synchronously in the request (Gemini took 1 to 20 s); a slow provider holds the button | `api/v1/ai.py` | Queue through the outbox and poll, as new leads do |
 | 31 | Reply drafts are previews only: not saved, no approval, no send | `services/drafting.py` | P6: `communication_drafts`, Approvals screen, send via W4b (ADR 011) |
 | 32 | Follow-up eligibility cannot see customer replies (no inbound tracking yet) | `services/assistant.py` | P6/P8: communication logs feed the "no reply" rule |
 | 33 | The playground shows "None found" when the AI is unavailable (no facts without the model) | `/assistant` | Optionally show the offline keyword view, clearly labelled |
 | 34 | Sample-data names use simple combinations; a twin's typo is "a" doubled, which looks odd ("Hinaa") | `services/sample_data.py` | Use a small typo list (swap, drop a letter) |
+| 35 | Live Gemini eval covers 14 of 40 cases (budget-limited); the rest resume from the cache on later days | `evals/` | Run `run_eval.py --provider gemini` (no sample) over the next days until complete |

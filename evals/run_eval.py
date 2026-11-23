@@ -264,11 +264,14 @@ def write_report(provider, total, results, runs, failures, stopped, full_size=No
         "",
         "## Limits of this evaluation",
         "",
-        f"- {total} cases is a small sample; one case moves a percentage by "
-        f"{100 / total:.1f} points.",
+        f"- {len(results)} scored cases is a small sample; one case moves a percentage by "
+        f"{100 / max(len(results), 1):.1f} points.",
         "- Expected bands are one person's sales judgment, not ground truth.",
-        "- The fake provider is keyword rules; its numbers test the pipeline, not AI quality.",
     ]
+    if provider == "fake":
+        lines.append(
+            "- The fake provider is keyword rules; its numbers test the pipeline, not AI quality."
+        )
     out.with_suffix(".md").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     out.with_suffix(".json").write_text(
         json.dumps(
