@@ -9,7 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.ai import fake_provider
-from app.models import Lead, LeadInquiry
+from app.models import Lead, LeadInquiry, PipelineStage
+from app.services.activity import record
 
 
 def analyze_lead(db: Session, org_id: uuid.UUID, lead_id: uuid.UUID) -> dict | None:
@@ -38,6 +39,30 @@ def analyze_lead(db: Session, org_id: uuid.UUID, lead_id: uuid.UUID) -> dict | N
     lead.score_source = "fake"
     lead.score_provisional = False
     lead.ai_status = "done"
+    record(db, org_id, lead.id, "scored", "ai", score=result.score, band=result.band, source="fake")
+    # A brand-new lead moves from "New" to "AI processed" once it is scored.
+    new_stage = db.scalar(
+        select(PipelineStage).where(
+            PipelineStage.organization_id == org_id, PipelineStage.key == "new"
+        )
+    )
+    processed = db.scalar(
+        select(PipelineStage).where(
+            PipelineStage.organization_id == org_id, PipelineStage.key == "ai_processed"
+        )
+    )
+    if new_stage and processed and lead.stage_id == new_stage.id:
+        lead.stage_id = processed.id
+        record(
+            db,
+            org_id,
+            lead.id,
+            "stage_changed",
+            "system",
+            from_stage="new",
+            to_stage="ai_processed",
+            to_label=processed.label,
+        )
     db.commit()
     return _result(lead, result.summary)
 

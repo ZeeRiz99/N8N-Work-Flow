@@ -12,6 +12,9 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "alembic>=1.14",
     "httpx>=0.28",
+    "argon2-cffi>=23.1",
+    "pyjwt>=2.9",
+    "phonenumbers>=8.13",
     "google-genai>=1.0",
     "openai>=1.60",
 ]

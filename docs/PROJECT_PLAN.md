@@ -16,7 +16,7 @@ Rhythm: 1 phase = 1 branch = 1 pull request = 1 verified increment. Details per 
 - [x] **P3 Walking skeleton**: form → backend → n8n → backend → alert → dashboard row (fake AI) (PR #2, 2026-11-22; email alert Verified, Telegram follows when the bot exists, backlog #17)
 
 ## M1 Working MVP
-- [ ] P4 Auth, organizations, CRM core
+- [x] P4 Auth, organizations, CRM core (PR #3, 2026-11-23)
 - [ ] P5 AI intelligence (Gemini first; scoring, grounding, evals)
 - [ ] P6 n8n MVP automation, Telegram, approvals
 - [ ] P7 MVP gate and demo readiness (`v0.1.0-mvp`)

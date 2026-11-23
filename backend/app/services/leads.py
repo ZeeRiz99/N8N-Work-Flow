@@ -16,6 +16,10 @@ from sqlalchemy.orm import Session
 from app.core.logging import request_id_var
 from app.models import IdempotencyKey, Lead, LeadInquiry, Organization, OutboxEvent
 from app.schemas.public import PublicLeadIn
+from app.services.activity import record
+from app.services.normalize import normalize_email as _normalize_email
+from app.services.normalize import normalize_phone
+from app.services.org import source_id, stage_id
 
 IDEMPOTENCY_SCOPE = "public_lead"
 
@@ -30,7 +34,7 @@ class IntakeResult:
 
 def normalize_email(email: str) -> str:
     """Lowercase and trim. Gmail dots are kept on purpose (master prompt §6)."""
-    return email.strip().lower()
+    return _normalize_email(email) or ""
 
 
 def default_idempotency_key(org_id: uuid.UUID, email_normalized: str, message: str) -> str:
@@ -115,13 +119,17 @@ def _store(
             email=data.email,
             email_normalized=email_n,
             phone_raw=data.phone or None,
+            phone_e164=normalize_phone(data.phone, org.default_country),
             company=data.company or None,
+            stage_id=stage_id(db, org.id, "new"),
+            source_id=source_id(db, org.id, "form"),
         )
         db.add(lead)
         db.flush()
     else:
         # Returning lead: fill gaps, never overwrite what we already know.
         lead.phone_raw = lead.phone_raw or data.phone or None
+        lead.phone_e164 = lead.phone_e164 or normalize_phone(data.phone, org.default_country)
         lead.company = lead.company or data.company or None
         lead.last_interaction_at = now
         lead.ai_status = "pending"  # the new message gets analyzed too
@@ -145,6 +153,9 @@ def _store(
     )
     db.add(inquiry)
     db.flush()
+    if created:
+        record(db, org.id, lead.id, "lead_created", "system", source="form")
+    record(db, org.id, lead.id, "inquiry_received", "system", channel="form")
 
     db.add(
         IdempotencyKey(

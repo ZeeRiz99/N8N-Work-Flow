@@ -30,8 +30,19 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | # | Limit | Where | Fix later |
 |---|---|---|---|
 | 14 | Public-form rate limit is in memory, per process; restarts reset it and several workers would not share it | `app/api/deps.py` | P10: move to PostgreSQL or Redis-backed limits behind the reverse proxy |
-| 15 | Dashboard reads use temporary dev access (development + 127.0.0.1 + demo org) | `require_dev_access` | P4: replace with login, cookies and RBAC; delete the dev path |
+| 15 | ~~Dashboard reads use temporary dev access~~ **Fixed in P4** (login, cookies, roles; dev path deleted) | — | — |
 | 16 | W1 does analyze, alert and logging inline; W0 (Log Run) and W3 (alert) are not separate sub-workflows yet | `n8n/workflows/rl-w1-lead-intake.json` | P6: split into W0, W2, W3, W4 sub-workflows as in master prompt §9.3 |
 | 17 | Alerts go by email only; Telegram waits for the bot token and a system-wide VPN | W1 | P3 follow-up as soon as the bot exists (ADR 005) |
 | 18 | After a cold backend start, the first outbox delivery can take a few seconds longer than the 1.2 s warm path | outbox worker | Measure in P7 demo rehearsal; pre-warm the backend before demos |
-| 19 | Frontend API client is hand-written | `frontend/src/lib/api.ts` | P4: generate from FastAPI's OpenAPI (`openapi-typescript`, D6) |
+| 19 | Frontend API client is hand-written | `frontend/src/lib/api.ts` | Partly fixed in P4: types generated from OpenAPI (`npm run gen:api`) for auth and settings; see #20 |
+
+## From Phase 4
+
+| # | Limit | Where | Fix later |
+|---|---|---|---|
+| 20 | Lead, notes, timeline, import and duplicate endpoints return plain dicts, so their OpenAPI types are empty and the frontend types for them are hand-written | `app/api/v1/leads.py`, `data.py` | Add Pydantic response models, regenerate `api-schema.d.ts` |
+| 21 | Next.js 16 keeps the previous page mounted but hidden (React Activity); the hidden Leads table keeps polling every 15 s | `leads-table.tsx` | Pause polling while hidden (`document.visibilityState` / Activity-aware effect) |
+| 22 | The Playwright journey needs the full local stack, so it is not in CI yet | `frontend/e2e` | P10/P11: run it in CI against compose services |
+| 23 | E2E runs leave "E2E Test" organizations in the dev database (cleaned by hand after runs) | dev DB | Add a cleanup step or a dedicated e2e database |
+| 24 | No invite flow yet: new team members can only be added by sign-up or the CLI | `app/api/v1/org.py` | P9: member invites (master prompt §13 P9) |
+| 25 | Running backend processes do not reload code; after pulling changes, restart the backend (the e2e run hit this) | dev workflow | Document in README; use `--reload` while developing |

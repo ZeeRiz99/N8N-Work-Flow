@@ -2,6 +2,18 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-23: Phase 4 (auth, organizations, CRM core)
+
+- **Auth (D7):** argon2id passwords; 15-minute access JWT and rotating refresh token, both httpOnly cookies (refresh scoped to `/api/v1/auth`); reuse of a rotated refresh token revokes the whole login family; membership and role re-checked on every request; CSRF = custom header + origin check; login rate limit; temporary P3 dev access removed. `app.cli set-demo-owner` creates the developer's login with a hidden password prompt.
+- **Same-origin proxy:** Next.js forwards `/api/*` to FastAPI so session cookies are first-party; the backend trusts `X-Forwarded-For` only from the local proxy.
+- **Organization:** default pipeline stages and sources for every organization (data migration for existing ones), service catalog with price ranges, team roles (last owner protected; only owners grant ownership), business profile; tenant scoping helpers (`scoped`, `get_owned`) so a foreign id looks missing (404).
+- **CRM:** create / edit / search (trigram + `word_similarity` for typos) / filters / sort / pages; stage changes; assignment; notes; activity timeline (per-row Python timestamps, since `now()` ties within a transaction); archive and restore; admin-only erasure with an anonymous audit row; audit log for role changes, removals, imports, exports, merges.
+- **Data:** CSV import with preview, column guessing, per-row errors, 2 MB / 5,000-row limits and exact-match merging; admin-only export with formula-injection protection; fuzzy duplicate scan with human-only merge or dismiss.
+- **Frontend:** app shell and sidebar from the mockups (unbuilt screens marked "Soon"), Leads list with filters and New-lead dialog, Lead detail (stage, assignee, contact edit, messages, notes, timeline, archive, erase), CSV import, duplicate review, login and sign-up; types generated from OpenAPI.
+- **Bug found by the browser test:** the New-lead modal stayed open in the hidden previous page after navigating, making the next page unclickable. Fixed by closing it before navigating and on cleanup.
+- **Gate Verified:** 90 backend tests (authz, isolation matrices, CSV, duplicates); Playwright journey register → new lead → stage → note → CSV import → search → export passes 3 of 3 runs (7.1 s, 5.9 s, 5.5 s); frontend lint, typecheck and build pass; `npm run gen:api` regenerates without errors; smoke 8 of 8.
+- **Dependencies added (C13):** `argon2-cffi` (password hashing), `pyjwt` (access tokens), `phonenumbers` (E.164 normalization), `openapi-typescript` (typed client), `@playwright/test` and Chromium (end-to-end tests).
+
 ## 2026-11-22: Phase 3 (walking skeleton)
 
 - **Schema:** first Alembic migration with the 8 P3 tables (all tenant tables carry `organization_id`); up, down and up again Verified. A separate `replyline_test` database for integration tests.
