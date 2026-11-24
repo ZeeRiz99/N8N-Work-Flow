@@ -27,6 +27,6 @@ Rhythm: 1 phase = 1 branch = 1 pull request = 1 verified increment. Details per 
 - [x] P10 Security, QA and reliability hardening (v0.2.0)
 
 ## M3 Portfolio release
-- [ ] P11 Deployment
+- [x] P11 Deployment, prepared and rehearsed locally; going live needs a server, domain and DNS from the developer (`docs/DEPLOYMENT.md`)
 - [ ] P12 Portfolio and freelance packaging, including polished screenshots
 - [ ] After the last build phase: fix everything in `docs/BACKLOG.md`

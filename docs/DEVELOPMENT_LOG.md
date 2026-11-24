@@ -2,6 +2,18 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-24: Phase 11 (deployment, prepared, not live)
+
+- **Production stack:** `infra/compose.prod.yml` (PostgreSQL, n8n, backend, frontend, Caddy). Only Caddy is public; n8n is bound to the server's 127.0.0.1 (SSH tunnel for the editor); PostgreSQL is never published. The backend gets an explicit environment list (no superuser or n8n secrets).
+- **Images:** `backend/Dockerfile` (python:3.14-slim, non-root, healthcheck, migrations on start, 1 worker so the in-memory rate limits stay exact) and `frontend/Dockerfile` (Next.js standalone, node:24-alpine, non-root). Inspected: no `.env` and no secret values inside the images.
+- **HTTPS proxy:** Caddy 2.10 with automatic Let's Encrypt, HSTS, compression; `/api/v1/internal/*` and the API docs return 404 from outside.
+- **Code changes:** `TRUSTED_PROXIES` CIDR setting so the client IP comes from X-Forwarded-For only behind a configured proxy (test added); `AI_USAGE_FILE` override for the Gemini daily budget file (the container root is read-only for the app user).
+- **Scripts:** `scripts/deploy.sh` (refuses REPLACE_ME values, builds, waits for health, seeds the demo org, imports n8n credentials with output hidden, imports and activates the 9 workflows, runs the checks; `--check` runs only the checks), `backup-prod.sh` (nightly, 14 days), `reset-demo.sh` (public demo reset).
+- **Runbook:** `docs/DEPLOYMENT.md`: server choice with sourced prices, DNS, SPF/DKIM/DMARC, server hardening, first deploy, checks, backups and restore, updates and rollback, monitoring, public demo.
+- **Verified locally (production rehearsal, `TLS_MODE=internal`, ports 8080/8443):** all 5 containers up; all 6 checks pass; journey on the production stack: form 201 → AI done (high) → draft → approve → sent → email in Mailpit; W1 and W4b successful. Stack torn down with `down -v`, the local `.env.production` deleted.
+- **Not done (needs the developer):** buying a server and a domain, DNS records, a real SMTP service. No purchase was made.
+- **Fixed on the way:** image pulls failed with "short read" (retried); Caddy can't nest env defaults (moved into compose); Git Bash rewrote `/tmp` paths (`MSYS_NO_PATHCONV`, repo-relative temp dir); the public-address n8n probe gave a false failure on localhost (replaced with port-binding checks).
+
 ## 2026-11-24: Phase 10 (security, QA and reliability hardening): v0.2.0
 
 - **Authorization and isolation:** `test_security_matrix.py`: 32 endpoints × anonymous/member/admin/owner and 21 isolation checks across every resource type; CSRF; headers.

@@ -1,0 +1,24 @@
+# Replyline edge proxy: automatic HTTPS (Let's Encrypt), or Caddy's local CA when TLS_MODE=internal.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	# "internal" for a local test, otherwise the ACME email (Let's Encrypt); set by compose.
+	tls {$TLS_MODE}
+
+	encode zstd gzip
+
+	# n8n-only API and API docs are never served to the internet.
+	@internal path /api/v1/internal /api/v1/internal/*
+	respond @internal 404
+	@docs path /docs /docs/* /redoc /openapi.json
+	respond @docs 404
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	reverse_proxy frontend:3000
+}

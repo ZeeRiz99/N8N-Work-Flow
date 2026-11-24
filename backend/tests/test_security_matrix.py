@@ -213,3 +213,23 @@ def test_security_headers(client):
 
 
 __all__ = ["PW"]
+
+
+def test_forwarded_for_trusted_only_from_configured_proxies(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.api.deps import client_ip
+    from app.core.config import get_settings
+
+    def req(peer, xff):
+        return SimpleNamespace(
+            client=SimpleNamespace(host=peer), headers={"x-forwarded-for": xff} if xff else {}
+        )
+
+    s = get_settings()
+    monkeypatch.setattr(s, "trusted_proxies", "172.28.0.0/24")
+    assert client_ip(req("172.28.0.5", "203.0.113.9, 172.28.0.3")) == "203.0.113.9"
+    assert client_ip(req("127.0.0.1", "203.0.113.9")) == "203.0.113.9"
+    assert client_ip(req("198.51.100.7", "1.2.3.4")) == "198.51.100.7"  # forged header ignored
+    monkeypatch.setattr(s, "trusted_proxies", "")
+    assert client_ip(req("172.28.0.5", "203.0.113.9")) == "172.28.0.5"
