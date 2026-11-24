@@ -99,7 +99,7 @@ try {
         Start-Sleep 3
         Start-Backend $e2eEnv
         $ok16 = $false
-        for ($i = 0; $i -lt 120; $i++) {
+        for ($i = 0; $i -lt 200; $i++) {  # up to 400 s: a run killed mid-analysis is requeued after 5 min
             $state = Sql "select l.ai_status || '|' || (select count(*) from communication_drafts d where d.lead_id = l.id) from leads l where l.email_normalized = '$email'"
             if ($state -eq 'done|1') { $ok16 = $true; break }
             Start-Sleep 2

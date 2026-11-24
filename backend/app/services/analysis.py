@@ -462,6 +462,10 @@ def retry_failed(db: Session, now: datetime | None = None) -> int:
 
 
 STUCK_AFTER_SECONDS = 45
+# A lead in "processing" may legitimately wait on the AI for minutes: 2 models x 3 attempts x a
+# 30 s timeout plus backoff (about 4 min). Requeueing it earlier ran a second analysis in
+# parallel and spent the daily budget twice.
+PROCESSING_STUCK_AFTER_SECONDS = 300
 MAX_INTAKE_EVENTS = 3
 
 
@@ -476,12 +480,17 @@ def requeue_stuck_leads(db: Session, now: datetime | None = None) -> int:
     from app.services.leads import _event_envelope
 
     now = now or datetime.now(UTC)
+    from sqlalchemy import and_, or_
+
     cutoff = now - timedelta(seconds=STUCK_AFTER_SECONDS)
+    processing_cutoff = now - timedelta(seconds=PROCESSING_STUCK_AFTER_SECONDS)
     leads = db.scalars(
         select(Lead)
         .where(
-            Lead.ai_status.in_(("pending", "processing")),
-            Lead.updated_at < cutoff,
+            or_(
+                and_(Lead.ai_status == "pending", Lead.updated_at < cutoff),
+                and_(Lead.ai_status == "processing", Lead.updated_at < processing_cutoff),
+            ),
             Lead.archived_at.is_(None),
         )
         .limit(50)

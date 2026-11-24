@@ -1,35 +1,35 @@
 # Replyline
 
-**Turn incoming leads into organized business opportunities.**
-Replyline captures every inquiry, understands it with AI, scores it with transparent rules, alerts
-the team, drafts the reply for human approval, and makes sure nobody is forgotten. n8n runs the
+[![CI](https://github.com/ZeeRiz99/N8N-Work-Flow/actions/workflows/ci.yml/badge.svg)](https://github.com/ZeeRiz99/N8N-Work-Flow/actions/workflows/ci.yml)
+
+**AI lead management that sorts every inquiry, explains its score, and never sends a reply
+without a person's approval.**
+
+![A customer submits the form; Replyline analyzes it, scores it High and explains why](docs/portfolio/final/demo-moment.gif)
+
+## The problem
+
+Small service businesses get inquiries from forms, email and spreadsheets. Good leads get lost
+among spam and price shoppers, replies go out late, and follow-ups depend on memory. "AI
+auto-reply" tools answer fast but can invent prices or promises nobody approved.
+
+## What it does
+
+Replyline captures every inquiry, reads it with AI, scores it with transparent rules, alerts the
+team, drafts the reply for human approval, and makes sure nobody is forgotten. n8n runs the
 automation; the backend makes every decision; a person approves every outbound message.
 
-> **Project status and honesty.** A self-developed portfolio project, MVP complete
-> (`v0.1.0-mvp`, phase 7 of 12). All data is fictional. No customers, revenue or time-saving
-> claims. AI accuracy numbers come only from committed evaluation reports, with the sample size
-> stated.
+## Project status and honesty
 
-![Lead detail with AI analysis and score explanation](docs/portfolio/p5-02-lead-ai-analysis-and-score.png)
+- A **self-developed portfolio project** (v1.0.0, all 12 phases complete). No customers, no
+  revenue, no time-saving or conversion claims.
+- **All data is fictional** (`@example.com` addresses, invented companies).
+- AI accuracy numbers come only from committed evaluation reports, with the sample size stated:
+  the live Gemini evaluation covers **14 scored cases**.
+- The production setup is built and rehearsed locally but **not deployed on a public server**.
+- Every public claim maps to evidence in [docs/PORTFOLIO_CLAIMS.md](docs/PORTFOLIO_CLAIMS.md).
 
-## What it does (shipped)
-
-- **Capture:** public web form (consent, honeypot, rate limit), manual entry, CSV import with
-  preview; exact and fuzzy duplicate detection with human-only merge.
-- **Understand:** Gemini extracts facts, and **every fact must quote the customer's own words**
-  (grounding); unquoted claims are dropped. Prompt-injection text is flagged and never raises a
-  score.
-- **Score:** deterministic, configurable 7-factor rules (versioned per organization) with a
-  plain-language explanation and factor bars. The AI never sets a number.
-- **Act:** high-priority alerts, reply drafts with automatic checks (prices from your service
-  list, no promised dates or discounts, link allow-list, opt-out line added by code), an
-  **Approvals queue**, and sending only after a person approves (exactly once).
-- **Keep going:** follow-up scheduled after each sent email, Lead Q&A grounded in that lead's
-  records, an AI Assistant playground, Overview dashboard, Automation Center, Integrations.
-- **Reliable:** transactional outbox, idempotency keys, retries with backoff, circuit breaker,
-  provisional scores when the AI is down, automatic recovery of leads stuck by a crash.
-
-## How it works
+## Architecture
 
 ```
 Form / CSV / manual ─► FastAPI backend ──outbox──► n8n W1 ─► backend: analyze (Gemini + grounding + rules)
@@ -40,35 +40,53 @@ Form / CSV / manual ─► FastAPI backend ──outbox──► n8n W1 ─► b
                                                            └─► claim once ─► SMTP ─► sent + follow-up
 ```
 
-Tech: FastAPI (Python 3.14, SQLAlchemy 2, Alembic) · Next.js 16, React 19, TypeScript, Tailwind 4 ·
-PostgreSQL 18 · n8n 2 · Gemini (`gemini-3.6-flash`) · Mailpit · Docker Compose · GitHub Actions.
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · decisions: [docs/adr/](docs/adr/) ·
+case study: [docs/CASE_STUDY.md](docs/CASE_STUDY.md).
 
-## Evaluation (real numbers only)
+## Tech stack
 
-[`evals/reports/2026-11-23-gemini-sample15.md`](evals/reports/2026-11-23-gemini-sample15.md):
-live Gemini run on a 15-case stratified sample of a 40-inquiry fictional dataset (14 scored
-within the daily budget). Priority band agreement 93%, service and budget extraction 100%,
-grounding rejected 1 of 62 claims, no schema-invalid output. A small sample: one case moves a
-percentage by about 7 points. A red-team corpus of 16 prompt-injection techniques runs in the
-test suite.
+FastAPI (Python 3.14, SQLAlchemy 2, Alembic, Pydantic 2) · Next.js 16, React 19, TypeScript,
+Tailwind 4 · PostgreSQL 18 · n8n 2 · Gemini (`gemini-3.6-flash`) · Docker Compose · Caddy ·
+Mailpit · GitHub Actions · pytest · Playwright.
+
+## Features (shipped)
+
+- **Capture:** public web form (consent, honeypot, rate limit), manual entry, CSV import with
+  preview; exact and fuzzy duplicate detection with human-only merge.
+- **Understand:** Gemini extracts service, budget, timeline and intent, and **every fact must
+  quote the customer's own words** (grounding); unquoted claims are dropped. Prompt-injection
+  text is flagged for review and never raises a score.
+- **Score:** deterministic, configurable 7-factor rules (versioned per organization) with a
+  plain-language explanation per factor. The AI never sets the number.
+- **Act:** high-priority email alerts, reply drafts with automatic checks (prices from your
+  service list, no promised dates or discounts, link allow-list, opt-out line added by code), an
+  **Approvals queue**, and sending only after a person approves, exactly once.
+- **Keep going:** follow-ups after each sent email, check-ins on quiet leads, contact rules and a
+  suppression list, a daily summary and source-performance report (numbers checked against SQL),
+  analytics, team roles and invitations, an AI assistant grounded in your own records.
+- **Reliable:** transactional outbox, idempotency keys, retries with backoff, circuit breaker,
+  provisional scores when the AI is down, a sweeper for stalled work, throttled error alerts.
 
 ## Screenshots
 
 | | |
 |---|---|
-| ![Leads sorted by AI score](docs/portfolio/p5-01-leads-sorted-by-ai-score.png) | ![Approvals queue](docs/portfolio/p6-01-approvals-queue.png) |
-| ![Prompt injection flagged](docs/portfolio/p5-04-prompt-injection-flagged-for-review.png) | ![Automation Center](docs/portfolio/p6-02-automation-center.png) |
-| ![Overview dashboard](docs/portfolio/p7-01-overview.png) | ![Scoring settings](docs/portfolio/p5-06-scoring-settings.png) |
+| ![Overview dashboard with new leads, priority mix and pipeline](docs/portfolio/final/01-overview.png) | ![Leads table filtered to High priority, sorted by score](docs/portfolio/final/02-leads-filtered.png) |
+| ![Lead detail: AI analysis with quoted evidence](docs/portfolio/final/03-lead-ai-summary-evidence.png) | ![Why this score: the seven factors explained](docs/portfolio/final/04-score-breakdown.png) |
+| ![Approvals queue with a checked reply draft](docs/portfolio/final/05-approvals-draft.png) | ![Automation Center with workflow run history](docs/portfolio/final/06-automation-center.png) |
+| ![Analytics: lead source performance](docs/portfolio/final/09-analytics-sources.png) | ![Public lead form](docs/portfolio/final/10-public-form.png) |
+
+More: [docs/portfolio/](docs/portfolio/) (WebP copies in `final/`).
 
 ## Quick start (Windows, PowerShell)
 
-Prerequisites: Git, Docker Desktop (WSL 2), Python 3.14, Node.js 24. The path contains a space,
-so **quote every path**.
+Prerequisites: Git, Docker Desktop (WSL 2), Python 3.14, Node.js 24. If your path contains a
+space, **quote every path**.
 
 ```powershell
+git clone https://github.com/ZeeRiz99/N8N-Work-Flow.git "D:\Projects\N8N Work Flow"
 cd "D:\Projects\N8N Work Flow"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\new-env.ps1   # .env with random secrets
-.\scripts\set-secret.ps1 GEMINI_API_KEY        # optional: paste from the clipboard, never printed
 .\scripts\dev.ps1 up                           # PostgreSQL, n8n, Mailpit
 
 cd backend
@@ -82,14 +100,10 @@ python -m venv .venv
 cd ..
 .\scripts\seed.ps1                             # ~150 fictional leads over 60 days
 .\scripts\n8n-credentials.ps1
-.\scripts\import-workflows.ps1 -Activate       # W1, W4b, W9
+.\scripts\import-workflows.ps1 -Activate
 
 cd frontend; npm ci; npm run build; npm run start
 ```
-
-Without a Gemini key, set `AI_PROVIDER=fake` in `.env`: the offline provider runs the same
-pipeline. On the free tier a daily budget (`GEMINI_DAILY_BUDGET`, default 18) keeps usage under
-Google's quota; past it, leads get a provisional score and are retried later.
 
 | Service | URL |
 |---|---|
@@ -98,34 +112,66 @@ Google's quota; past it, leads get a provisional score and are retried later.
 | n8n editor | http://localhost:5678 |
 | Mailpit inbox | http://localhost:8025 |
 
-## Deployment
+## Environment configuration
 
-Production runs from `infra/compose.prod.yml` (PostgreSQL, n8n, backend, frontend, Caddy with
-automatic HTTPS; only Caddy is public, n8n's editor only through an SSH tunnel). On a server:
-fill `.env.production` from `.env.production.example`, then `./scripts/deploy.sh`. Runbook,
-hosting comparison, DNS and email setup, backups and rollback: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+`scripts\new-env.ps1` writes `.env` from `.env.example` with random secrets (never committed).
+The main switches:
+
+| Variable | Meaning |
+|---|---|
+| `AI_PROVIDER` | `gemini` or `fake` (offline provider, same pipeline, no external calls) |
+| `GEMINI_API_KEY` | Save it with `.\scripts\set-secret.ps1 GEMINI_API_KEY` (from the clipboard, never printed) |
+| `GEMINI_DAILY_BUDGET` | Calls per day (default 18) to stay under the free-tier quota; past it, leads get a provisional score and are retried |
+| `ALLOW_REGISTRATION` | Self-service sign-up on or off |
+| `SMTP_*`, `ALERT_EMAIL_TO` | Mailpit in development; a real SMTP service in production |
+
+Use synthetic data only with a free-tier Gemini key. Production settings:
+[.env.production.example](.env.production.example).
+
+## API
+
+OpenAPI at `/docs` (development only). Curated guide: [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md).
+
+## n8n workflows
+
+Nine workflows (W1 intake, W4b send, W5 follow-ups, W6 quiet-lead check-ins, W7 duplicate scan,
+W8 daily summary, W9 error monitor, W9b retry sweeper, W10 source performance):
+[docs/AUTOMATION_WORKFLOWS.md](docs/AUTOMATION_WORKFLOWS.md).
 
 ## Testing
 
-| Command | What it proves |
-|---|---|
-| `backend\.venv\Scripts\python -m pytest` | 266 tests: auth, tenant isolation, scoring, grounding, red team, AI faults, "no send unless approved" |
-| `.\scripts\journey.ps1` | The 16-step MVP journey, 3 runs, each from a clean database (incl. killing the backend mid-flow) |
-| `.\scripts\smoke.ps1` | Form → n8n → score → alert → draft → approve → email, no duplicates on redelivery |
-| `.\scripts\failure-injection.ps1` | n8n stopped and SMTP refusing: nothing lost, nothing sent twice |
-| `.\scripts\ui-audit.ps1` | Every page and control, no console or server errors |
-| `backend\.venv\Scripts\python ..\evals\run_eval.py --provider fake` | Evaluation harness (CI uses the offline provider) |
+361 backend tests, 4 Playwright suites, journey, smoke, failure-injection, load and restore
+scripts: [docs/TESTING.md](docs/TESTING.md).
+
+**AI evaluation:** [`evals/reports/2026-11-23-gemini-sample15.md`](evals/reports/2026-11-23-gemini-sample15.md),
+a live Gemini run on 14 scored fictional inquiries (stratified sample of a 40-case dataset):
+priority band agreement 93%, service and budget extraction 100%, grounding rejected 1 of 62
+claims, no schema-invalid output. A small sample: one case moves a percentage by about 7 points.
+
+## Deployment
+
+`infra/compose.prod.yml` runs PostgreSQL, n8n, the backend, the frontend and Caddy (automatic
+HTTPS; only Caddy is public, n8n's editor only through an SSH tunnel). On a server: fill
+`.env.production`, then `./scripts/deploy.sh`. Runbook: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+## Roadmap
+
+Public deployment · Telegram alerts · Google Sheets "lite" variant · services settings screen ·
+shared rate limiter for scaling · nonce-based CSP · full 40-case live evaluation · screen-reader
+pass. Open items: [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Documentation
 
-[Master prompt](docs/MASTER_PROMPT.md) · [Architecture](docs/ARCHITECTURE.md) ·
-[Database](docs/DATABASE_SCHEMA.md) · [API](docs/API_DOCUMENTATION.md) ·
-[Automation workflows](docs/AUTOMATION_WORKFLOWS.md) · [Security](docs/SECURITY.md) ·
-[Deployment](docs/DEPLOYMENT.md) ·
+[Architecture](docs/ARCHITECTURE.md) · [Database](docs/DATABASE_SCHEMA.md) ·
+[API](docs/API_DOCUMENTATION.md) · [Workflows](docs/AUTOMATION_WORKFLOWS.md) ·
+[Security](docs/SECURITY.md) · [Testing](docs/TESTING.md) · [Deployment](docs/DEPLOYMENT.md) ·
 [UI action audit](docs/UI_ACTION_AUDIT.md) · [Performance](docs/PERFORMANCE.md) ·
-[Demo script](docs/DEMO_SCRIPT.md) · [Decisions](docs/adr/) · [Backlog](docs/BACKLOG.md) ·
+[Demo script](docs/DEMO_SCRIPT.md) · [Video script](docs/DEMO_VIDEO_SCRIPT.md) ·
+[Case study](docs/CASE_STUDY.md) · [Claims and evidence](docs/PORTFOLIO_CLAIMS.md) ·
+[Client delivery kit](docs/CLIENT_DELIVERY_KIT.md) · [Decisions](docs/adr/) ·
 [Development log](docs/DEVELOPMENT_LOG.md)
 
 ## License
 
-All rights reserved until the licence is decided (master prompt §16.7).
+All rights reserved until the licence is decided (see master prompt §16.7). The repository is
+private.

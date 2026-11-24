@@ -2,6 +2,16 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-24: Phase 12 (portfolio and freelance packaging): v1.0.0
+
+- **README** rewritten in the §16.1 order (pitch, demo GIF, problem, status and honesty, architecture, stack, shipped features, screenshots, quick start, configuration, API, workflows, testing, deployment, roadmap, licence) with a CI badge.
+- **New docs:** `PORTFOLIO_CLAIMS.md` (every claim → evidence; numbers with caveats; claims we do not make), `CASE_STUDY.md`, `DEMO_VIDEO_SCRIPT.md` (90 s and 3–5 min cuts), `FREELANCE_OFFERS.md` (Fiverr/Upwork drafts with sourced price research, LinkedIn series), `CLIENT_DELIVERY_KIT.md`, `TESTING.md`.
+- **Screenshots:** `frontend/scripts/final-shots.mjs` drives a fictional lead through the real stack and saves 8 shots (1440×900, PNG + WebP) and an animated GIF, encoded inside headless Chromium (canvas + a small GIF encoder), so no image library was installed. Captured with the offline AI provider (the Gemini budget was spent; see below). Shots 07 (n8n canvas) and 08 (Telegram) are for the developer.
+- **Bug found and fixed (from the screenshot run):** the stuck-lead sweeper requeued leads still in "processing" after 45 s, while one analysis can take about 4 minutes on Gemini timeouts (2 models × 3 attempts × 30 s). The duplicate runs spent the whole daily budget in 8 minutes. Now "processing" waits 5 minutes (test added); `journey.ps1` step 16 waits up to 400 s.
+- **Also fixed:** draft topics keep acronyms ("AI chatbot", not "ai chatbot"; test added); Approvals labels check-in drafts "Check-in" instead of "First reply"; the UI-audit spec restores the draft text it edits (5 runs had left "Thanks again." ×5 in a demo draft; cleaned); 9 leftover smoke/test leads erased from the demo org.
+- **Temporary screenshot owner** created in harbor-web and deleted afterwards (with its sessions); its password file deleted.
+- **Not done (developer):** pin the repo, record the video, n8n and Telegram shots, decide the licence and prices, publish the case study/LinkedIn posts.
+
 ## 2026-11-24: Phase 11 (deployment, prepared, not live)
 
 - **Production stack:** `infra/compose.prod.yml` (PostgreSQL, n8n, backend, frontend, Caddy). Only Caddy is public; n8n is bound to the server's 127.0.0.1 (SSH tunnel for the editor); PostgreSQL is never published. The backend gets an explicit environment list (no superuser or n8n secrets).

@@ -123,7 +123,12 @@ test("UI action audit: every page and control works without errors", async ({ pa
   await page.keyboard.press("j");
   await page.keyboard.press("k");
   const msg = page.getByLabel("Message").filter({ visible: true });
-  await msg.fill(`${await msg.inputValue()}\nThanks again.`);
+  const original = await msg.inputValue();
+  await msg.fill(`${original}\nThanks again.`);
+  await btn(page, "Save edits").click();
+  await expect(btn(page, "Save edits")).toBeDisabled();
+  // Put the text back: this runs against the demo organization's real queue.
+  await msg.fill(original);
   await btn(page, "Save edits").click();
   await expect(btn(page, "Save edits")).toBeDisabled();
   await btn(page, "Reject with reason").click();
