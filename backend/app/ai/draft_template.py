@@ -21,6 +21,11 @@ def _money(minor: int | None, currency: str) -> str:
     return f"{currency} {minor / 100:,.0f}" if minor is not None else ""
 
 
+def _topic(name: str) -> str:
+    """Service name inside a sentence: lower case, but keep acronyms (AI, CRM, SEO)."""
+    return " ".join(w if w.isupper() else w.lower() for w in name.split())
+
+
 def template_draft(data: dict) -> DraftOutput:
     org = data.get("business", {}).get("name", "our team")
     style = data.get("style", "professional")
@@ -29,7 +34,7 @@ def template_draft(data: dict) -> DraftOutput:
     facts = data.get("facts", {})
     lines = [f"Hi {first}," if first else "Hello,", ""]
     if data.get("kind") == "recovery":
-        topic = services[0]["name"].lower() if services else "your project"
+        topic = _topic(services[0]["name"]) if services else "your project"
         lines += [
             f"It has been a little while since we talked about {topic}.",
             "If the timing was not right before, we would still be glad to help.",
@@ -46,7 +51,7 @@ def template_draft(data: dict) -> DraftOutput:
             services_mentioned=[services[0]["name"]] if services else [],
         )
     if data.get("kind") == "follow_up":
-        topic = services[0]["name"].lower() if services else "your project"
+        topic = _topic(services[0]["name"]) if services else "your project"
         lines.append(f"I'm following up on your message about {topic}.")
         lines.append("If it would help, we're happy to answer any questions.")
         first_q = [
@@ -76,7 +81,7 @@ def template_draft(data: dict) -> DraftOutput:
                 f" Projects like this usually range from {_money(s['price_min_minor'], cur)}"
                 f" to {_money(s['price_max_minor'], cur)}, depending on the details."
             )
-        lines.append(f"We'd be glad to help with {s['name'].lower()}.{rng}")
+        lines.append(f"We'd be glad to help with {_topic(s['name'])}.{rng}")
     need = facts.get("requirements") or []
     if need and style != "concise":
         lines.append(f"You mentioned: {need[0]}. That is something we can plan for.")

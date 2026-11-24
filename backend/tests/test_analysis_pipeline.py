@@ -241,3 +241,27 @@ def test_stuck_lead_is_requeued_once_its_event_was_delivered(db, org, catalog):
     events = db.scalars(select(OutboxEvent).where(OutboxEvent.event_type == "lead.created")).all()
     assert len(events) == 2 and events[-1].payload["data"]["requeued"] is True
     assert events[-1].payload["event_id"] != events[0].payload["event_id"]
+
+
+def test_lead_still_processing_is_not_requeued_while_the_ai_may_be_retrying(db, org, catalog):
+    """A slow AI call (timeouts + retries + fallback model) must not trigger a parallel run."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import OutboxEvent
+    from app.services.leads import _event_envelope
+
+    lead = make_lead(db, org)
+    lead.ai_status = "processing"
+    db.add(
+        OutboxEvent(
+            organization_id=org.id,
+            event_type="lead.created",
+            status="delivered",
+            payload=_event_envelope("lead.created", org.id, {"lead_id": str(lead.id)}),
+        )
+    )
+    db.flush()
+    two_min = datetime.now(UTC) + timedelta(minutes=2)
+    assert analysis.requeue_stuck_leads(db, two_min) == 0
+    ten_min = datetime.now(UTC) + timedelta(minutes=10)
+    assert analysis.requeue_stuck_leads(db, ten_min) == 1  # a crashed run still recovers

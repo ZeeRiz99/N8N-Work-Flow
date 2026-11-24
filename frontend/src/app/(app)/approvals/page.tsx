@@ -7,6 +7,11 @@ import { PriorityBadge } from "@/components/badges";
 import { buttonDanger, buttonPrimary, buttonSecondary, card, field } from "@/components/ui-tokens";
 import { api, type DraftCheck, errorText, type LeadAnalysis, type SavedDraft } from "@/lib/api";
 
+const KIND_LABEL: Record<string, string> = {
+  first_reply: "First reply",
+  follow_up: "Follow-up",
+  recovery: "Check-in",
+};
 const OPT_OUT = `If you'd rather not hear from us again, just reply "unsubscribe".`;
 const TABS = [
   ["pending_approval", "Waiting"],
@@ -399,7 +404,7 @@ export default function ApprovalsPage() {
                   </span>
                   <span className="truncate text-sm text-[#5A6075]">{d.subject}</span>
                   <span className="text-xs text-[#5A6075]">
-                    {d.kind === "follow_up" ? "Follow-up" : "First reply"}
+                    {KIND_LABEL[d.kind] ?? "Reply"}
                     {d.all_passed ? "" : " · checks to fix"}
                   </span>
                 </button>

@@ -80,3 +80,10 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | 42 | Rate limits are in memory per process, so the backend runs 1 worker | `api/deps.py`, `backend/Dockerfile` | Shared limiter (PostgreSQL or Redis) before adding workers |
 | 43 | The Gemini daily budget file lives in the container's /tmp and resets when the backend container is recreated | `infra/compose.prod.yml` | Small volume for the counter, or keep the count in PostgreSQL |
 | 44 | Backups stay on the server; copying them off-site is manual | `scripts/backup-prod.sh` | rclone/restic job to object storage |
+
+## From Phase 12
+
+| # | Limit | Where | Fix later |
+|---|---|---|---|
+| 45 | The service catalog and response-time line are edited through the API only; no settings screen | `api/v1/org.py`, frontend settings | Settings → Services screen |
+| 46 | UI-audit spec ran against the demo org and left edited drafts behind (fixed: it now restores the text); smoke and audit runs still add test leads to the demo org | `frontend/e2e/ui-audit.spec.ts`, `scripts/smoke.ps1` | Run audits in a throwaway org like `journey.ps1` does |
