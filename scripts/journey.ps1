@@ -43,7 +43,7 @@ function Stop-Backend {
 function Start-Backend([hashtable]$envVars) {
     $saved = @{}
     foreach ($k in $envVars.Keys) { $saved[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, $envVars[$k]) }
-    Start-Process -FilePath $py -ArgumentList '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8000' `
+    Start-Process -FilePath $py -ArgumentList '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8000', '--timeout-keep-alive', '65' `
         -WorkingDirectory $backend -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $env:TEMP 'rl-backend.log') -RedirectStandardError (Join-Path $env:TEMP 'rl-backend.err')
     foreach ($k in $saved.Keys) { [Environment]::SetEnvironmentVariable($k, $saved[$k]) }

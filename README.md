@@ -75,7 +75,7 @@ cd backend
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -e ".[dev]"
 .\.venv\Scripts\alembic upgrade head
-.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --timeout-keep-alive 65
 # in a second terminal, still in backend:
 .\.venv\Scripts\python -m app.cli seed-demo
 .\.venv\Scripts\python -m app.cli set-demo-owner          # your login (password typed hidden)

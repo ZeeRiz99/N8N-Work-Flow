@@ -24,7 +24,7 @@ Rhythm: 1 phase = 1 branch = 1 pull request = 1 verified increment. Details per 
 ## M2 Professional SaaS
 - [x] P8 Follow-ups, duplicates and recovery
 - [x] P9 Analytics, reports, settings and team
-- [ ] P10 Security, QA and reliability hardening (`v0.2.0`)
+- [x] P10 Security, QA and reliability hardening (v0.2.0)
 
 ## M3 Portfolio release
 - [ ] P11 Deployment

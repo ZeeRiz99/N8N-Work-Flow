@@ -2,6 +2,18 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-24: Phase 10 (security, QA and reliability hardening): v0.2.0
+
+- **Authorization and isolation:** `test_security_matrix.py`: 32 endpoints × anonymous/member/admin/owner and 21 isolation checks across every resource type; CSRF; headers.
+- **Headers:** API CSP `default-src 'none'`, frame DENY, nosniff, no-referrer, no-store, HSTS over HTTPS; frontend same-origin CSP (unsafe-inline for Next.js, documented), frame DENY, no X-Powered-By.
+- **Audits:** pip-audit clean; npm production deps clean (shadcn CLI moved to devDependencies, 4 moderate dev-only findings accepted); gitleaks scans the full history in CI.
+- **Load smoke:** 130 concurrent requests (100 unique + 30 duplicates) → exactly 100 leads, all processed by n8n within 30 s, nothing duplicated (`scripts/load-smoke.ps1`).
+- **Accessibility:** axe over 18 pages, no critical issues; one serious (colour-only links) fixed.
+- **Backup and restore drill:** `scripts/backup.ps1` + `restore-drill.ps1`: 27 tables restored with identical counts.
+- **PII review:** logs contain metadata only; n8n executions pruned after 14 days.
+- **Found by the final UI audit:** an intermittent 500 when the Next.js proxy reused a keep-alive connection uvicorn had just closed (5 s default). The backend now runs with `--timeout-keep-alive 65` (scripts and README).
+- `docs/SECURITY.md` final.
+
 ## 2026-11-24: Phase 9 (analytics, reports, settings, team)
 
 - **Analytics:** `/analytics/sources`, `/funnel`, `/team`, `/export` and the Analytics page (Sources, Funnel, Team, Reports; 30/90/365 days; CSV). **Gate:** a test seeds 40 fictional leads and checks every Overview card, the trend, sources, funnel and team figures against independent raw SQL.
