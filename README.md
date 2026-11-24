@@ -98,6 +98,13 @@ Google's quota; past it, leads get a provisional score and are retried later.
 | n8n editor | http://localhost:5678 |
 | Mailpit inbox | http://localhost:8025 |
 
+## Deployment
+
+Production runs from `infra/compose.prod.yml` (PostgreSQL, n8n, backend, frontend, Caddy with
+automatic HTTPS; only Caddy is public, n8n's editor only through an SSH tunnel). On a server:
+fill `.env.production` from `.env.production.example`, then `./scripts/deploy.sh`. Runbook,
+hosting comparison, DNS and email setup, backups and rollback: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Testing
 
 | Command | What it proves |
@@ -114,6 +121,7 @@ Google's quota; past it, leads get a provisional score and are retried later.
 [Master prompt](docs/MASTER_PROMPT.md) · [Architecture](docs/ARCHITECTURE.md) ·
 [Database](docs/DATABASE_SCHEMA.md) · [API](docs/API_DOCUMENTATION.md) ·
 [Automation workflows](docs/AUTOMATION_WORKFLOWS.md) · [Security](docs/SECURITY.md) ·
+[Deployment](docs/DEPLOYMENT.md) ·
 [UI action audit](docs/UI_ACTION_AUDIT.md) · [Performance](docs/PERFORMANCE.md) ·
 [Demo script](docs/DEMO_SCRIPT.md) · [Decisions](docs/adr/) · [Backlog](docs/BACKLOG.md) ·
 [Development log](docs/DEVELOPMENT_LOG.md)

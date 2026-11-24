@@ -71,3 +71,12 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | 38 | n8n holds one service key, scoped to one organization; approved drafts in other organizations are never claimed for sending (claim-send is org-scoped) | `api/deps.py`, n8n credentials | Platform service key (scope `internal:any-org`) that resolves the org from the draft or lead id; or one n8n credential per org |
 | 39 | Frontend CSP still allows unsafe-inline for scripts/styles (Next.js bootstrap) | `frontend/next.config.ts` | Nonce-based CSP through middleware |
 | 40 | Screen-reader pass (NVDA) not done yet; axe and keyboard checks only | frontend | Manual NVDA walk of the journey before launch |
+
+## From Phase 11
+
+| # | Limit | Where | Fix later |
+|---|---|---|---|
+| 41 | Not live: needs a server, a domain, DNS records and a real SMTP service (purchases are the developer's call) | `docs/DEPLOYMENT.md` | Follow the runbook, then run the journey on the real domain |
+| 42 | Rate limits are in memory per process, so the backend runs 1 worker | `api/deps.py`, `backend/Dockerfile` | Shared limiter (PostgreSQL or Redis) before adding workers |
+| 43 | The Gemini daily budget file lives in the container's /tmp and resets when the backend container is recreated | `infra/compose.prod.yml` | Small volume for the counter, or keep the count in PostgreSQL |
+| 44 | Backups stay on the server; copying them off-site is manual | `scripts/backup-prod.sh` | rclone/restic job to object storage |

@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 secrets/
 .claude/settings.local.json
 
@@ -40,3 +41,6 @@ Thumbs.db
 # local Gemini call counter (app/ai/budget.py)
 .ai-usage.json
 .ai-usage.lock
+
+# deploy.sh scratch
+.deploy-tmp.*

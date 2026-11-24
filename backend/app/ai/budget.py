@@ -15,7 +15,8 @@ from zoneinfo import ZoneInfo
 
 from app.core.config import REPO_ROOT
 
-USAGE_FILE = REPO_ROOT / ".ai-usage.json"
+# AI_USAGE_FILE overrides the location (the production image is read-only for its user).
+USAGE_FILE = Path(os.environ.get("AI_USAGE_FILE") or REPO_ROOT / ".ai-usage.json")
 _LOCK = USAGE_FILE.with_suffix(".lock")
 _PACIFIC = ZoneInfo("America/Los_Angeles")
 

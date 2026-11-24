@@ -104,6 +104,13 @@ class Settings(BaseSettings):
         """Webhook base with localhost pinned to IPv4 (Docker publishes 127.0.0.1 only)."""
         return self.n8n_webhook_base_url.rstrip("/").replace("://localhost", "://127.0.0.1")
 
+    # Our own proxies whose X-Forwarded-For is believed (comma-separated IPs or networks).
+    trusted_proxies: str = ""
+
+    @property
+    def trusted_proxy_list(self) -> list[str]:
+        return [x.strip() for x in self.trusted_proxies.split(",") if x.strip()]
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

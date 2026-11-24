@@ -1,0 +1,147 @@
+# Replyline production stack. On the server:
+#   docker compose -f infra/compose.prod.yml --env-file .env.production up -d --build
+# Only Caddy is public (80/443). PostgreSQL is never published; n8n listens on the server's
+# own localhost only, so its editor is reachable through an SSH tunnel and nothing else.
+name: replyline
+
+services:
+  postgres:
+    image: postgres:${POSTGRES_IMAGE_TAG:-18.7}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERPASSWORD}
+      APP_DB_NAME: ${APP_DB_NAME}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      N8N_DB_NAME: ${N8N_DB_NAME}
+      N8N_DB_USER: ${N8N_DB_USER}
+      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD}
+      TZ: UTC
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [internal]
+    mem_limit: 512m
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME}
+      DB_POSTGRESDB_USER: ${N8N_DB_USER}
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      # Webhooks are only called by the backend, inside the private network.
+      N8N_WEBHOOK_URL: http://n8n:5678/
+      N8N_SECURE_COOKIE: "false"             # editor only over the SSH tunnel (localhost)
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-UTC}
+      TZ: ${GENERIC_TIMEZONE:-UTC}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_COMMUNITY_PACKAGES_ENABLED: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: 336           # hours (14 days)
+    ports:
+      - "127.0.0.1:5678:5678"                # server-local only: ssh -L 5678:127.0.0.1:5678
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks: [internal]
+    mem_limit: 1g
+
+  backend:
+    build: ../backend
+    image: replyline-backend:${RELEASE:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Only what the backend needs (not the database superuser or n8n secrets).
+    environment:
+      APP_ENV: production
+      APP_SECRET_KEY: ${APP_SECRET_KEY}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
+      DEMO_ORG_SLUG: ${DEMO_ORG_SLUG:-harbor-web}
+      PUBLIC_FORM_RATE_LIMIT_PER_MINUTE: ${PUBLIC_FORM_RATE_LIMIT_PER_MINUTE:-10}
+      LOGIN_RATE_LIMIT_PER_MINUTE: ${LOGIN_RATE_LIMIT_PER_MINUTE:-5}
+      APP_DB_NAME: ${APP_DB_NAME}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+      SERVICE_API_KEY: ${SERVICE_API_KEY}
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET}
+      AI_PROVIDER: ${AI_PROVIDER:-fake}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_DAILY_BUDGET: ${GEMINI_DAILY_BUDGET:-18}
+      AI_DAILY_CALL_CAP: ${AI_DAILY_CALL_CAP:-500}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      AI_USAGE_FILE: /tmp/replyline-ai-usage.json   # writable; the daily budget counter
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      N8N_WEBHOOK_BASE_URL: http://n8n:5678/webhook/rl
+      FRONTEND_PUBLIC_URL: https://${DOMAIN}
+      CORS_ORIGINS: https://${DOMAIN}
+      TRUSTED_PROXIES: 172.28.0.0/24
+      SMTP_TEST_HOST: ${SMTP_HOST}
+      SMTP_TEST_PORT: ${SMTP_PORT:-587}
+      N8N_EDITOR_URL: http://localhost:5678
+    networks:
+      internal:
+        ipv4_address: 172.28.0.20
+    mem_limit: 512m
+
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        BACKEND_URL: http://backend:8000
+    image: replyline-frontend:${RELEASE:-latest}
+    restart: unless-stopped
+    depends_on: [backend]
+    networks: [internal]
+    mem_limit: 512m
+
+  caddy:
+    image: caddy:${CADDY_IMAGE_TAG:-2.10-alpine}
+    restart: unless-stopped
+    depends_on: [frontend]
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+      # "internal" for a local test; otherwise the ACME email, i.e. Let's Encrypt
+      TLS_MODE: ${TLS_MODE:-${ACME_EMAIL}}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [internal]
+    mem_limit: 128m
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  postgres_data:
+  n8n_data:
+  caddy_data:
+  caddy_config:

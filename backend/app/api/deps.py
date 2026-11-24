@@ -31,12 +31,33 @@ LOCAL_PROXIES = {"127.0.0.1", "::1"}
 # ---------------------------------------------------------------- client IP
 
 
+def _trusted(peer: str) -> bool:
+    """True when the direct peer is one of our own proxies (TRUSTED_PROXIES: IPs or networks;
+    in production the private Docker network that holds Caddy and the Next.js server)."""
+    import ipaddress
+
+    if peer in LOCAL_PROXIES:
+        return True
+    try:
+        ip = ipaddress.ip_address(peer)
+    except ValueError:
+        return False
+    for item in get_settings().trusted_proxy_list:
+        try:
+            if ip in ipaddress.ip_network(item, strict=False):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def client_ip(request: Request) -> str:
-    """The visitor's IP. X-Forwarded-For is trusted only when the direct peer is the local
-    Next.js proxy; from anywhere else it could be forged."""
+    """The visitor's IP. X-Forwarded-For is trusted only when the direct peer is one of our own
+    proxies; from anywhere else it could be forged. The left-most entry is the address our edge
+    proxy (Caddy) saw."""
     peer = request.client.host if request.client else "unknown"
     forwarded = request.headers.get("x-forwarded-for")
-    if peer in LOCAL_PROXIES and forwarded:
+    if forwarded and _trusted(peer):
         return forwarded.split(",")[0].strip() or peer
     return peer
 
