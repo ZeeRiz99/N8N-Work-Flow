@@ -81,6 +81,23 @@ def create_app() -> FastAPI:
         finally:
             request_id_var.reset(token)
         response.headers[REQUEST_ID_HEADER] = rid
+        # Security headers (P10). The API returns JSON only, so it may load nothing at all.
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        response.headers.setdefault(
+            "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
+        )
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        if not request.url.path.startswith(("/docs", "/redoc", "/openapi.json")):
+            response.headers.setdefault(
+                "Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"
+            )
+            response.headers.setdefault("Cache-Control", "no-store")
+        if get_settings().cookie_secure:
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
         logger.info(
             "request",
             extra={
