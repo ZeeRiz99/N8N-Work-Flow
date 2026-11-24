@@ -16,7 +16,8 @@ Pop-Location
 try {
     $env:E2E_OWNER_EMAIL = $email; $env:E2E_PASSWORD_FILE = $pwFile
     Push-Location (Join-Path $root 'frontend')
-    npx playwright test e2e/ui-audit.spec.ts --reporter=line
+    New-Item -ItemType Directory -Force (Join-Path $root "frontend/test-results") | Out-Null
+    npx playwright test e2e/ui-audit.spec.ts e2e/a11y.spec.ts --reporter=line
     $code = $LASTEXITCODE
     Pop-Location
 } finally {

@@ -229,7 +229,7 @@ export default function AutomationPage() {
                       {r.lead_id && (
                         <>
                           {" "}
-                          <Link href={`/leads/${r.lead_id}`} className="text-[#4338CA]">
+                          <Link href={`/leads/${r.lead_id}`} className="text-[#4338CA] underline">
                             Lead
                           </Link>
                         </>
