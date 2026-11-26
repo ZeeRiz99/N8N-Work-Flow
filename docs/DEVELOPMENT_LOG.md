@@ -5,7 +5,7 @@ Newest first. Every new dependency gets a one-line justification here (contract 
 ## 2026-11-27: Backlog #39 decided (ADR 012)
 
 - **Nonce CSP:** Next.js 16's bundled guide says nonces need dynamic rendering and are incompatible with Partial Prerendering (Cache Components).
-- **Hash CSP via `experimental.sri`, tested:** the build passes, but `script-src 'self'` blocks Next.js's inline payload scripts (5 violations on `/f/harbor-web`) and the form never renders. Reverted.
+- **Hash CSP via `experimental.sri`, tested:** the build passes, but `script-src 'self'` blocks Next.js's inline payload scripts (5 violations on `/f/harbor-web`), which the page needs to hydrate. Reverted.
 - **Decision:** keep `'unsafe-inline'` for scripts and styles while Cache Components is on; mitigations listed in ADR 012 (React escaping, no inline scripts of our own, same-origin everything else, httpOnly cookies, CSRF). SECURITY.md updated (also the #38 note).
 
 ## 2026-11-26: Backlog fix pass, slice 2a (#38, #45)

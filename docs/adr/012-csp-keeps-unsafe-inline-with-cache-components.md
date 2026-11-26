@@ -19,8 +19,8 @@ those scripts some other way.
    rendering every page on every request: slower pages and more server work, for the whole app.
 2. **Hash-based CSP with Subresource Integrity (`experimental.sri`).** Tested on 2026-11-27:
    with `script-src 'self'` and SRI on, the build succeeds, but the browser blocks the inline
-   payload scripts (5 CSP violations on `/f/harbor-web`) and the page never becomes interactive
-   (the form does not render). SRI only covers script *files*; the inline scripts change per
+   payload scripts (5 CSP violations on `/f/harbor-web`), and without them the page cannot
+   hydrate. SRI only covers script *files*; the inline scripts change per
    page and per data, so their hashes cannot be listed ahead of time.
 
 ## Decision
