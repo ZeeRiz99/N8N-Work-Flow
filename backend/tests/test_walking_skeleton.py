@@ -159,6 +159,9 @@ def test_alert_summary_is_plain_text_with_link_in_text(client, db, org, service_
     body = client.get(f"/api/v1/internal/leads/{lead_id}/alert-summary", headers=headers).json()
     assert "Amira Hassan" in body["title"]
     assert body["link"] in body["text"]
+    # Facts only: the customer's own message never goes into an alert (third-party channel).
+    assert "Message:" not in body["text"] and "Interested in:" in body["text"]
+    assert "(fake)" not in body["text"]
 
 
 def test_workflow_run_upsert_never_duplicates(client, db, org, service_key):

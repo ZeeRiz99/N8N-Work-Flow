@@ -75,7 +75,7 @@ Mailpit · GitHub Actions · pytest · Playwright.
 | ![Lead detail: AI analysis with quoted evidence](docs/portfolio/final/03-lead-ai-summary-evidence.png) | ![Why this score: the seven factors explained](docs/portfolio/final/04-score-breakdown.png) |
 | ![Approvals queue with a checked reply draft](docs/portfolio/final/05-approvals-draft.png) | ![Automation Center with workflow run history](docs/portfolio/final/06-automation-center.png) |
 | ![Analytics: lead source performance](docs/portfolio/final/09-analytics-sources.png) | ![Public lead form](docs/portfolio/final/10-public-form.png) |
-| ![Telegram bot connected for High-lead alerts](docs/portfolio/final/08-telegram-alert.png) | |
+| ![A High-lead alert in Telegram: facts only, with a link to the lead](docs/portfolio/final/08-telegram-alert.png) | |
 
 More: [docs/portfolio/](docs/portfolio/) (WebP copies in `final/`).
 

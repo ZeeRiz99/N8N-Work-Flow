@@ -2,6 +2,12 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-27: Telegram alert delivered; alerts are facts-only
+
+- With a full-PC VPN on, both the PC and the n8n container reached Telegram. A fictional High lead (offline provider) went through W1 and the alert was delivered to @reply_line_bot (n8n run 278, 1.7 s, Telegram message id returned).
+- **Privacy bug found and fixed:** the alert text included a 280-character excerpt of the customer's message and the internal provider name ("fake"), although the design (and the bot's own test message) promise facts only. `alert_summary` now sends company, service, budget, timeline and score (labelled "AI", "offline AI" or "provisional") plus the link; the test asserts no message text and no "(fake)". The same text is used for email alerts.
+- Screenshot 08 replaced with the real facts-only alert, captured from Telegram Desktop (with the developer's permission) and cropped to the bot chat; the full-screen capture was deleted. Test leads erased.
+
 ## 2026-11-27: Backlog #39 decided (ADR 012)
 
 - **Nonce CSP:** Next.js 16's bundled guide says nonces need dynamic rendering and are incompatible with Partial Prerendering (Cache Components).
