@@ -2,6 +2,12 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-27: Backlog #39 decided (ADR 012)
+
+- **Nonce CSP:** Next.js 16's bundled guide says nonces need dynamic rendering and are incompatible with Partial Prerendering (Cache Components).
+- **Hash CSP via `experimental.sri`, tested:** the build passes, but `script-src 'self'` blocks Next.js's inline payload scripts (5 violations on `/f/harbor-web`), which the page needs to hydrate. Reverted.
+- **Decision:** keep `'unsafe-inline'` for scripts and styles while Cache Components is on; mitigations listed in ADR 012 (React escaping, no inline scripts of our own, same-origin everything else, httpOnly cookies, CSRF). SECURITY.md updated (also the #38 note).
+
 ## 2026-11-26: Backlog fix pass, slice 2a (#38, #45)
 
 - **#38 One n8n key for every organization:** API keys with the `internal:any-org` scope resolve the organization from the lead, draft or follow-up in the path (or the lead in a run/alert log body); sweeps (due follow-ups, check-in candidates, duplicate scan) cover every organization. Normal keys stay scoped (another organization's draft is never claimed). `seed-demo` gives the platform key the scope; the dev key was upgraded. Daily and source reports stay with the home organization. 4 tests.

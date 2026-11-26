@@ -62,11 +62,13 @@ all 100 processed by n8n W1 within 30 s, no lead with two drafts.
 
 ## Documented exceptions
 
-- **Frontend CSP allows `'unsafe-inline'` for scripts and styles.** Next.js inlines its bootstrap
-  code; a nonce-based CSP via middleware is the stricter follow-up (backlog). Everything else is
-  same-origin only and the app cannot be framed.
-- **n8n uses one service key scoped to one organization** (backlog #38). Fine for a single
-  business; a multi-tenant deployment needs a platform key or one credential per organization.
+- **Frontend CSP allows `'unsafe-inline'` for scripts and styles.** Next.js inlines its payload
+  scripts, and nonces are incompatible with Cache Components (Partial Prerendering); a hash-based
+  SRI policy was tested and blocked those scripts. Decision and mitigations: ADR 012. Everything
+  else is same-origin only and the app cannot be framed.
+- **The platform's n8n key works for every organization** (`internal:any-org` scope, backlog
+  #38): it acts only for the organization of the lead, draft or follow-up it names; other keys
+  stay scoped to one organization.
 
 ## Residual risks
 
