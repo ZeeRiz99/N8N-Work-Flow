@@ -157,8 +157,7 @@ HTTPS; only Caddy is public, n8n's editor only through an SSH tunnel). On a serv
 
 ## Roadmap
 
-Public deployment · Google Sheets "lite" variant · services settings screen ·
-shared rate limiter for scaling · nonce-based CSP · full 40-case live evaluation · screen-reader
+Public deployment · Google Sheets "lite" variant · nonce-based CSP · full 40-case live evaluation · screen-reader
 pass. Open items: [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Documentation

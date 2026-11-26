@@ -194,6 +194,20 @@ test("UI action audit: every page and control works without errors", async ({ pa
     await page.goto(path);
     await expect(heading(page, title)).toBeVisible();
   }
+  // Services (backlog #45): add one, edit its price range, save
+  await page.goto("/settings/services");
+  await expect(heading(page, "Services")).toBeVisible();
+  await page.getByLabel("Service", { exact: true }).last().fill("Audit Logo Design");
+  await page.getByLabel("From", { exact: true }).fill("300");
+  await page.getByLabel("To", { exact: true }).fill("900");
+  await btn(page, "Add service").click();
+  await expect(page.getByRole("status").filter({ hasText: "Service added." })).toBeVisible();
+  const row = page
+    .getByRole("listitem")
+    .filter({ has: page.locator('input[value="Audit Logo Design"]') });
+  await row.getByLabel(/^To \(/).fill("1200");
+  await row.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Service saved." })).toBeVisible();
   await page.goto("/settings/scoring");
   await btn(page, "Preview on recent leads").click();
   await expect(page.getByText(/recent leads would change priority/)).toBeVisible();

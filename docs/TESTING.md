@@ -21,7 +21,7 @@ that need AI use the offline provider (`AI_PROVIDER=fake`), so they never spend 
 | `.\scripts\smoke.ps1` | Form → n8n → analysis → alert → draft → approve → email in Mailpit; redelivery creates no duplicates |
 | `.\scripts\failure-injection.ps1` | n8n stopped, SMTP refusing, the backend restarted: leads wait and recover, nothing is sent twice |
 | `.\scripts\load-smoke.ps1` | 130 concurrent submissions (100 unique + 30 repeats) → exactly 100 leads, all processed |
-| `.\scripts\ui-audit.ps1` | Playwright clicks every page and control as a temporary owner; no console or server errors; axe accessibility scan of 18 pages |
+| `.\scripts\ui-audit.ps1` | Playwright clicks every page and control in a throwaway organization (deleted afterwards); no console or server errors; axe scan of every page. Run the backend with `AI_PROVIDER=fake` so it never waits on or spends the Gemini quota |
 | `.\scripts\restore-drill.ps1` | A fresh backup restores with identical row counts in every table |
 | `bash scripts/deploy.sh --check` | On the production stack: HTTPS, internal API blocked, docs hidden, n8n and PostgreSQL not public |
 

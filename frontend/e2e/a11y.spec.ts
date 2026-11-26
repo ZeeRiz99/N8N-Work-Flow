@@ -25,6 +25,7 @@ const PAGES = [
   "/settings/ai",
   "/settings/team",
   "/settings/pipeline",
+  "/settings/services",
   "/settings/rules",
 ];
 

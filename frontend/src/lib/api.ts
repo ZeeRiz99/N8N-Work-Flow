@@ -13,6 +13,7 @@ export type Member = Schemas["MemberOut"]; // generated
 export type Stage = Schemas["StageOut"]; // generated
 export type Source = Schemas["SourceOut"]; // generated
 export type Service = Schemas["ServiceOut"]; // generated
+export type ServiceInput = Schemas["ServiceIn"]; // generated
 
 export type Priority = "high" | "medium" | "low" | "unscored";
 export type AiStatus = "pending" | "processing" | "done" | "failed" | "skipped";
@@ -574,6 +575,9 @@ export const api = {
   stages: () => request<Stage[]>("/api/v1/settings/pipeline"),
   sources: () => request<Source[]>("/api/v1/settings/sources"),
   services: () => request<Service[]>("/api/v1/settings/services"),
+  addService: (body: ServiceInput) => request<Service>("/api/v1/settings/services", json(body)),
+  updateService: (id: string, body: Partial<ServiceInput>) =>
+    request<Service>(`/api/v1/settings/services/${id}`, send("PATCH", body)),
 
   // leads
   leads: (filters: LeadFilters = {}) => request<Page<LeadRow>>(`/api/v1/leads${query(filters)}`),

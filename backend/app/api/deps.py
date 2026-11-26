@@ -134,10 +134,20 @@ def csrf_protect(request: Request) -> None:
 # ---------------------------------------------------------------- service key (n8n)
 
 
+ANY_ORG_SCOPE = "internal:any-org"
+
+
 def require_service_key(
-    db: DbSession, x_service_key: Annotated[str | None, Header()] = None
+    request: Request, db: DbSession, x_service_key: Annotated[str | None, Header()] = None
 ) -> Organization:
-    """n8n -> /internal/*: a hashed, revocable key with the 'internal' scope."""
+    """n8n -> /internal/*: a hashed, revocable key with the 'internal' scope.
+
+    A key that also has 'internal:any-org' (the platform's own n8n, backlog #38) works for
+    every organization: the organization comes from the lead, draft or follow-up named in the
+    path, so one n8n credential serves all tenants. Without such an id it acts for its home
+    organization, and sweep endpoints check `is_any_org` to cover every organization."""
+    from app.models import CommunicationDraft, FollowUp, Lead
+
     if not x_service_key:
         raise HTTPException(401, "Missing service key.")
     key = db.scalar(
@@ -149,10 +159,34 @@ def require_service_key(
         raise HTTPException(401, "Invalid service key.")
     key.last_used_at = datetime.now(UTC)
     db.commit()
-    org = db.get(Organization, key.organization_id)
+    org_id = key.organization_id
+    request.state.any_org = ANY_ORG_SCOPE in (key.scopes or [])
+    if request.state.any_org:
+        for param, model in (
+            ("lead_id", Lead),
+            ("draft_id", CommunicationDraft),
+            ("fu_id", FollowUp),
+        ):
+            raw = request.path_params.get(param)
+            if raw is None:
+                continue
+            try:
+                entity_id = uuid.UUID(str(raw))
+            except ValueError:
+                raise HTTPException(422, f"Invalid {param}.") from None
+            found = db.scalar(select(model.organization_id).where(model.id == entity_id))
+            if found is None:
+                raise HTTPException(404, "Not found.")
+            org_id = found
+            break
+    org = db.get(Organization, org_id)
     if org is None:
         raise HTTPException(401, "Invalid service key.")
     return org
+
+
+def is_any_org(request: Request) -> bool:
+    return bool(getattr(request.state, "any_org", False))
 
 
 ServiceOrg = Annotated[Organization, Depends(require_service_key)]
