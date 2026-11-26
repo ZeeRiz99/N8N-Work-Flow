@@ -6,6 +6,7 @@ import { type ReactNode, Suspense } from "react";
 
 const TABS = [
   ["/settings/scoring", "Lead scoring"],
+  ["/settings/services", "Services"],
   ["/settings/ai", "AI"],
   ["/settings/team", "Team"],
   ["/settings/pipeline", "Pipeline"],

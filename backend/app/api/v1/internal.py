@@ -12,14 +12,29 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
-from app.api.deps import DbSession, ServiceOrg
+from app.api.deps import DbSession, ServiceOrg, is_any_org
 from app.core.config import get_settings
-from app.models import Lead, LeadInquiry, ReportSnapshot, WorkflowExecution
+from app.models import Lead, LeadInquiry, Organization, ReportSnapshot, WorkflowExecution
 from app.services.analysis import analyze_lead
 from app.services.idempotency import claim_once
 from app.services.outbox import redispatch_failed
 
 router = APIRouter(prefix="/internal", tags=["internal"])
+
+
+def _body_lead_org(request: Request, org: Organization, db, lead_id) -> Organization:
+    """Any-org key: the organization of a lead named in the request body (run and alert logs)."""
+    if lead_id is None or not is_any_org(request):
+        return org
+    owner = db.scalar(select(Lead.organization_id).where(Lead.id == lead_id))
+    return db.get(Organization, owner) if owner else org
+
+
+def _orgs(request: Request, org: Organization, db) -> list[Organization]:
+    """Sweeps: every organization for an any-org key, else the key's own."""
+    if not is_any_org(request):
+        return [org]
+    return list(db.scalars(select(Organization).order_by(Organization.created_at)))
 
 
 @router.get("/health")
@@ -88,8 +103,9 @@ class WorkflowRunIn(BaseModel):
 
 
 @router.post("/workflow-runs")
-def log_workflow_run(run: WorkflowRunIn, org: ServiceOrg, db: DbSession) -> dict:
+def log_workflow_run(run: WorkflowRunIn, request: Request, org: ServiceOrg, db: DbSession) -> dict:
     """Upsert by (workflow_key, n8n_execution_id): a retried log call never makes a second row."""
+    org = _body_lead_org(request, org, db, run.lead_id)
     if run.lead_id is not None:
         owned = db.scalar(
             select(Lead.id).where(Lead.id == run.lead_id, Lead.organization_id == org.id)
@@ -277,9 +293,12 @@ class NotificationLogIn(BaseModel):
 
 
 @router.post("/notifications/log")
-def log_notification(n: NotificationLogIn, org: ServiceOrg, db: DbSession) -> dict:
+def log_notification(
+    n: NotificationLogIn, request: Request, org: ServiceOrg, db: DbSession
+) -> dict:
     """Record an alert on the lead's timeline. A failed alert never touches the lead's data; it
     asks n8n to tell the admin (throttled like W9), so a broken Telegram bot is noticed."""
+    org = _body_lead_org(request, org, db, n.lead_id)
     from app.services.activity import record
 
     if n.lead_id is not None:
@@ -315,11 +334,11 @@ def log_notification(n: NotificationLogIn, org: ServiceOrg, db: DbSession) -> di
 
 
 @router.get("/follow-ups/due")
-def internal_due_follow_ups(org: ServiceOrg, db: DbSession) -> dict:
+def internal_due_follow_ups(request: Request, org: ServiceOrg, db: DbSession) -> dict:
     """W5: due follow-ups, only while the organization is inside its own business hours."""
     from app.services import followups
 
-    items = followups.due_follow_ups(db, org_id=org.id)
+    items = [f for o in _orgs(request, org, db) for f in followups.due_follow_ups(db, org_id=o.id)]
     return {"items": [{"id": str(f.id), "lead_id": str(f.lead_id)} for f in items]}
 
 
@@ -336,10 +355,10 @@ def internal_prepare_follow_up(fu_id: uuid.UUID, org: ServiceOrg, db: DbSession)
 
 
 @router.get("/leads/recovery-candidates")
-def internal_recovery_candidates(org: ServiceOrg, db: DbSession) -> dict:
+def internal_recovery_candidates(request: Request, org: ServiceOrg, db: DbSession) -> dict:
     from app.services import followups
 
-    leads = followups.recovery_candidates(db, org.id)
+    leads = [x for o in _orgs(request, org, db) for x in followups.recovery_candidates(db, o.id)]
     return {
         "items": [{"lead_id": str(x.id), "reason": followups.recovery_reason(db, x)} for x in leads]
     }
@@ -357,11 +376,11 @@ def internal_recovery_suggestion(lead_id: uuid.UUID, org: ServiceOrg, db: DbSess
 
 
 @router.post("/duplicates/scan")
-def internal_duplicate_scan(org: ServiceOrg, db: DbSession) -> dict:
+def internal_duplicate_scan(request: Request, org: ServiceOrg, db: DbSession) -> dict:
     """W7: find new duplicate pairs. Never merges; a person reviews them."""
     from app.services import duplicates
 
-    added = duplicates.scan(db, org.id)
+    added = sum(duplicates.scan(db, o.id) for o in _orgs(request, org, db))
     link = f"{get_settings().frontend_public_url.rstrip('/')}/duplicates"
     return {
         "added": added,

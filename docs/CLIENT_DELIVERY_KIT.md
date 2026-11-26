@@ -23,7 +23,7 @@ changes, deployment patterns and the handover pack.
 
 | Setting | Where |
 |---|---|
-| Service catalog with price ranges | API `POST/PATCH /api/v1/settings/services` (no settings screen yet, backlog #45) |
+| Service catalog with price ranges | Settings → Services |
 | Scoring weights and thresholds (7 factors, versioned) | Settings → Lead scoring |
 | Pipeline stages | Settings → Pipeline |
 | Follow-up rules, notifications, data retention, suppression | Settings → Rules & data |

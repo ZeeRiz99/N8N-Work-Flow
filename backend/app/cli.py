@@ -74,12 +74,17 @@ def seed_demo() -> int:
                         name="n8n service key",
                         prefix=key_prefix(settings.service_api_key),
                         key_hash=digest,
-                        scopes=["internal"],
+                        # The platform's own n8n serves every organization (backlog #38).
+                        scopes=["internal", "internal:any-org"],
                     )
                 )
                 print("Registered the n8n service key (stored as a hash only).")
             else:
-                print("n8n service key already registered.")
+                if "internal:any-org" not in (existing.scopes or []):
+                    existing.scopes = [*(existing.scopes or []), "internal:any-org"]
+                    print("n8n service key: now valid for every organization.")
+                else:
+                    print("n8n service key already registered.")
         db.commit()
         print(f"Public form: {settings.frontend_public_url.rstrip('/')}/f/{org.slug}")
     return 0

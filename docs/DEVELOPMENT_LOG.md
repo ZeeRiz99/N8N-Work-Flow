@@ -2,6 +2,13 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-26: Backlog fix pass, slice 2a (#38, #45)
+
+- **#38 One n8n key for every organization:** API keys with the `internal:any-org` scope resolve the organization from the lead, draft or follow-up in the path (or the lead in a run/alert log body); sweeps (due follow-ups, check-in candidates, duplicate scan) cover every organization. Normal keys stay scoped (another organization's draft is never claimed). `seed-demo` gives the platform key the scope; the dev key was upgraded. Daily and source reports stay with the home organization. 4 tests.
+- **#45 Settings → Services:** list, add and edit services (name, price range in whole currency units, keywords, offered or not); admins only. Added to the UI audit (add + edit + save) and the axe scan: 2/2 passed.
+- **Note:** the UI audit's "Ask about this lead" step waited on Gemini (overloaded today) and timed out; audits now run with the offline provider (documented in TESTING.md).
+- **Left for after the weekly reset:** #39 nonce-based CSP.
+
 ## 2026-11-26: Backlog fix pass, slice 1
 
 - **#43 Gemini budget in PostgreSQL:** `usage_counters` with a guarded upsert (`app/core/counters.py`), so the count is shared by every worker and process and survives container restarts; the JSON file is only a fallback when the database is unreachable. Today's count was carried over from the file.

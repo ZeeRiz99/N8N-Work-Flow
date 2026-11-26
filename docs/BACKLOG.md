@@ -68,7 +68,7 @@ Each phase logs its known limits here. They are fixed together after the last bu
 |---|---|---|---|
 | 36 | W1 runs analyze, alert and draft inline instead of calling W2/W3/W4 sub-workflows (§9.3) | `n8n/workflows/rl-w1-lead-intake.json` | Split into Execute-Workflow sub-workflows once n8n workflow ids are pinned in the import script |
 | 37 | The smoke test approves through the service layer (no browser login in the script) | `scripts/smoke.ps1` | **Fixed 2026-11-26:** the smoke test logs in as a temporary approver and approves through `POST /drafts/{id}/approve`, then erases its lead |
-| 38 | n8n holds one service key, scoped to one organization; approved drafts in other organizations are never claimed for sending (claim-send is org-scoped) | `api/deps.py`, n8n credentials | Platform service key (scope `internal:any-org`) that resolves the org from the draft or lead id; or one n8n credential per org |
+| 38 | n8n holds one service key, scoped to one organization; approved drafts in other organizations are never claimed for sending (claim-send is org-scoped) | `api/deps.py`, n8n credentials | **Fixed 2026-11-26:** keys with the `internal:any-org` scope (the platform's n8n key, set by `seed-demo`) resolve the organization from the lead, draft or follow-up in the request and sweep every organization; reports stay with the key's home organization (one recipient inbox) |
 | 39 | Frontend CSP still allows unsafe-inline for scripts/styles (Next.js bootstrap) | `frontend/next.config.ts` | Nonce-based CSP through middleware |
 | 40 | Screen-reader pass (NVDA) not done yet; axe and keyboard checks only | frontend | Manual NVDA walk of the journey before launch |
 
@@ -85,5 +85,5 @@ Each phase logs its known limits here. They are fixed together after the last bu
 
 | # | Limit | Where | Fix later |
 |---|---|---|---|
-| 45 | The service catalog and response-time line are edited through the API only; no settings screen | `api/v1/org.py`, frontend settings | Settings → Services screen |
+| 45 | The service catalog and response-time line are edited through the API only; no settings screen | `api/v1/org.py`, frontend settings | **Fixed 2026-11-26:** Settings → Services screen: add services, edit names, price ranges, keywords and whether they are offered (admins only) |
 | 46 | UI-audit spec ran against the demo org and left edited drafts behind (fixed: it now restores the text); smoke and audit runs still add test leads to the demo org | `frontend/e2e/ui-audit.spec.ts`, `scripts/smoke.ps1` | **Fixed 2026-11-26:** `ui-audit.ps1` runs in a throwaway organization (`create-test-org` / `delete-org`); the smoke test erases its own lead |

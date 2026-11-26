@@ -28,6 +28,8 @@ server yet (the deployment is prepared and rehearsed locally).
 | Leads are not lost or duplicated when n8n or the backend stops mid-flow | Transactional outbox + idempotency keys (`backend/app/services/outbox.py`); `scripts/journey.ps1` (kills the backend mid-flow, 3/3 runs); `scripts/failure-injection.ps1` |
 | 130 concurrent submissions (100 unique + 30 repeats) produced exactly 100 leads, all processed within 30 s | `scripts/load-smoke.ps1`; `docs/PERFORMANCE.md`; development log 2026-11-24 (P10). Local machine, one run |
 | Multi-tenant: one organization never sees another's data | `backend/tests/test_security_matrix.py` (32 endpoints × 4 roles, 21 isolation checks) |
+| One n8n instance serves every organization; normal keys stay scoped to one | `app/api/deps.py` (`internal:any-org`); `backend/tests/test_any_org_service_key.py` |
+| Services and price ranges are edited in the app | `frontend/src/app/(app)/settings/services/page.tsx`; covered by `frontend/e2e/ui-audit.spec.ts` and `a11y.spec.ts` |
 | Roles: owner, admin, member; invitations | `backend/app/services/invitations.py`; `backend/tests/test_invitations.py`; screenshot `p9-04-team-invite.png` |
 | Analytics: funnel, source performance, reply time | `frontend/src/app/(app)/analytics/`; screenshots `final/09-analytics-sources.png`, `p9-02-analytics-funnel.png` |
 | Accessible: axe finds no critical issues on 18 pages; keyboard paths tested | `frontend/e2e/a11y.spec.ts`; `docs/audits/`. A screen-reader (NVDA) pass is **not** done yet (backlog #40) |
