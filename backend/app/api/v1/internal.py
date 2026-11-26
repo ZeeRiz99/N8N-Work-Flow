@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.api.deps import DbSession, ServiceOrg, is_any_org
 from app.core.config import get_settings
-from app.models import Lead, LeadInquiry, Organization, ReportSnapshot, WorkflowExecution
+from app.models import Lead, Organization, ReportSnapshot, WorkflowExecution
 from app.services.analysis import analyze_lead
 from app.services.idempotency import claim_once
 from app.services.outbox import redispatch_failed
@@ -60,25 +60,42 @@ def analyze(
 
 @router.get("/leads/{lead_id}/alert-summary")
 def alert_summary(lead_id: uuid.UUID, org: ServiceOrg, db: DbSession) -> dict:
-    """Facts only, plain text, with the dashboard link in the text (not a button; ADR 005)."""
+    """Facts only, plain text, with the dashboard link in the text (not a button; ADR 005).
+    The customer's own words never leave Replyline in an alert (Telegram is a third party): the
+    alert carries the grounded facts (service, budget, timeline) and the score."""
+    from app.services.analysis import latest
+
     lead = db.scalar(select(Lead).where(Lead.id == lead_id, Lead.organization_id == org.id))
     if lead is None:
         raise HTTPException(404, "Lead not found.")
-    inquiry = db.scalar(
-        select(LeadInquiry)
-        .where(LeadInquiry.lead_id == lead.id, LeadInquiry.organization_id == org.id)
-        .order_by(LeadInquiry.received_at.desc())
-        .limit(1)
-    )
-    excerpt = " ".join((inquiry.message if inquiry else "").split())[:280]
+    analysis, _ = latest(db, lead.id)
+    grounded = ((analysis.extracted or {}).get("grounded") or {}) if analysis else {}
+    services = ", ".join(x["name"] for x in grounded.get("services") or [] if x.get("name"))
+    budget = grounded.get("budget") or {}
+    lo, hi, cur = budget.get("min_minor"), budget.get("max_minor"), budget.get("currency") or ""
+    if lo is not None and hi is not None and lo != hi:
+        budget_text = f"{cur} {lo / 100:,.0f} to {hi / 100:,.0f}".strip()
+    elif hi is not None or lo is not None:
+        budget_text = f"{cur} {(hi if hi is not None else lo) / 100:,.0f}".strip()
+    else:
+        budget_text = "not stated"
+    timeline = (grounded.get("timeline") or {}).get("text") or "not stated"
     link = f"{get_settings().frontend_public_url.rstrip('/')}/leads"
-    score = "not scored" if lead.score is None else f"{lead.score}/100"
+    source = {"fake": "offline AI", "gemini": "AI"}.get(lead.score_source or "", "rules")
+    if lead.score is None:
+        score = "not scored yet"
+    else:
+        score = f"{lead.score}/100" + (
+            " (provisional)" if lead.score_provisional else f" ({source})"
+        )
     title = f"New {lead.priority} priority lead: {lead.full_name}"
     lines = [
         title,
         f"Company: {lead.company or 'not given'}",
-        f"Score: {score} ({lead.score_source or 'n/a'})",
-        f"Message: {excerpt}",
+        f"Interested in: {services or 'not stated'}",
+        f"Budget: {budget_text}",
+        f"Timeline: {timeline}",
+        f"Score: {score}",
         f"Open in Replyline: {link}",
     ]
     return {

@@ -32,7 +32,7 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | 14 | Public-form rate limit is in memory, per process; restarts reset it and several workers would not share it | `app/api/deps.py` | P10: move to PostgreSQL or Redis-backed limits behind the reverse proxy |
 | 15 | ~~Dashboard reads use temporary dev access~~ **Fixed in P4** (login, cookies, roles; dev path deleted) | — | — |
 | 16 | W1 does analyze, alert and logging inline; W0 (Log Run) and W3 (alert) are not separate sub-workflows yet | `n8n/workflows/rl-w1-lead-intake.json` | P6: split into W0, W2, W3, W4 sub-workflows as in master prompt §9.3 |
-| 17 | Alerts go by email only; Telegram waits for the bot token and a system-wide VPN | W1 | **Fixed 2026-11-26:** Telegram variant of W1 (`n8n/workflows/variants/`), used by the import scripts when the bot token and chat id are set; bot @reply_line_bot connected; email fallback verified when Telegram is unreachable. A successful W1 delivery needs a system-wide VPN on this network |
+| 17 | Alerts go by email only; Telegram waits for the bot token and a system-wide VPN | W1 | **Fixed 2026-11-27:** Telegram variant of W1, used when the bot token and chat id are set; a real High-lead alert was delivered to @reply_line_bot (needs a full-PC VPN on this network; otherwise W1 falls back to email) |
 | 18 | After a cold backend start, the first outbox delivery can take a few seconds longer than the 1.2 s warm path | outbox worker | Measure in P7 demo rehearsal; pre-warm the backend before demos |
 | 19 | Frontend API client is hand-written | `frontend/src/lib/api.ts` | Partly fixed in P4: types generated from OpenAPI (`npm run gen:api`) for auth and settings; see #20 |
 

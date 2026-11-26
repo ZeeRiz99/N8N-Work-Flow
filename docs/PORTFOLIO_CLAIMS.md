@@ -24,6 +24,7 @@ server yet (the deployment is prepared and rehearsed locally).
 | Contact rules and a suppression list guard every send path | `backend/app/services/followups.py` (`contact_check`); `backend/tests/test_followups.py` |
 | Follow-ups, lost-lead check-ins, a daily summary and source-performance reports run on schedules in n8n | W5, W6, W8, W10 in `n8n/workflows/`; `docs/AUTOMATION_WORKFLOWS.md` |
 | Report text written by the AI is checked number by number against SQL, otherwise a template is used | `backend/app/services/reports.py`; `backend/tests/test_reports.py` |
+| High-priority leads can alert the team on Telegram (optional), with email as the fallback; alerts carry facts only, never the customer's message | W1 Telegram variant `n8n/workflows/variants/`; `backend/app/api/v1/internal.py` (`alert_summary`); `backend/tests/test_walking_skeleton.py`; screenshot `final/08-telegram-alert.png` (a real alert from W1, 2026-11-27) |
 | Failed workflows email an alert (throttled); stalled deliveries are retried every 10 minutes | W9, W9b; `scripts/failure-injection.ps1` |
 | Leads are not lost or duplicated when n8n or the backend stops mid-flow | Transactional outbox + idempotency keys (`backend/app/services/outbox.py`); `scripts/journey.ps1` (kills the backend mid-flow, 3/3 runs); `scripts/failure-injection.ps1` |
 | 130 concurrent submissions (100 unique + 30 repeats) produced exactly 100 leads, all processed within 30 s | `scripts/load-smoke.ps1`; `docs/PERFORMANCE.md`; development log 2026-11-24 (P10). Local machine, one run |
@@ -54,13 +55,6 @@ server yet (the deployment is prepared and rehearsed locally).
 - No testimonials.
 - No accuracy claim beyond the evaluation reports above, always with the sample size.
 - No "production-proven" or uptime claims: it has not run on a public server.
-- Telegram alerts are **optional and only partly demonstrated**: W1 has a Telegram variant
-  (`n8n/workflows/variants/`), used when a bot token and chat id are configured, and the bot is
-  connected (screenshot 08 shows its connection test message). A real High-lead alert through W1
-  has not been captured yet, because Telegram is blocked on the dev network without a system-wide
-  VPN; the email fallback for that case is verified. Do not claim "Telegram alerts" without
-  saying this.
-
 ## Screenshots
 
 All screenshots use fictional organizations and people (`@example.com` addresses), taken from
@@ -71,4 +65,4 @@ recapture with Gemini after the budget resets (08:00 UTC): create a temporary ow
 from `frontend`, then delete the temporary owner. Gemini output appears in
 `p5-02-lead-ai-analysis-and-score.png`. Final set: `docs/portfolio/final/` (1440×900, PNG + WebP). Earlier per-phase
 shots: `docs/portfolio/p*.png`. Shot 7 (n8n canvas) is to be captured by the developer; shot 8
-is the Telegram bot's connection test, cropped from a desktop screenshot (see `docs/DEMO_VIDEO_SCRIPT.md`).
+is a real W1 alert in Telegram Desktop, cropped to the bot chat (see `docs/DEMO_VIDEO_SCRIPT.md`).
