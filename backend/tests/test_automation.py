@@ -17,7 +17,10 @@ def test_overview_has_workflows_journey_and_outbox(client, owner, monkeypatch): 
 
 def test_integrations_list_and_admin_only_test(client, owner, monkeypatch):  # noqa: F811
     from app.api.v1 import automation
+    from app.core.config import get_settings
 
+    # Independent of the developer's .env (a real bot token may be configured there).
+    monkeypatch.setattr(get_settings(), "telegram_bot_token", "")
     kinds = {i["kind"]: i for i in client.get("/api/v1/integrations").json()}
     assert set(kinds) == {"n8n", "email", "gemini", "telegram"}
     assert kinds["telegram"]["configured"] is False

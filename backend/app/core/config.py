@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 from urllib.parse import quote
 
 from pydantic import Field, field_validator
@@ -48,6 +49,10 @@ class Settings(BaseSettings):
 
     # Public form
     public_form_rate_limit_per_minute: int = 10
+    # Where rate limits and the Gemini daily budget are counted. "db" is shared by every worker
+    # and process (production); tests use "memory" / "file" so they never touch a real database.
+    rate_limit_store: Literal["db", "memory"] = "db"
+    ai_usage_store: Literal["db", "file"] = "db"
 
     # Auth (D7): short-lived access JWT + rotating refresh token, both in httpOnly cookies.
     app_secret_key: str = Field(default="", repr=False)

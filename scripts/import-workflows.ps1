@@ -3,7 +3,9 @@
   Imports Replyline's n8n workflows from n8n\workflows\*.json, filling URL placeholders from .env.
 .DESCRIPTION
   Placeholders (D21): __BACKEND_URL__ (BACKEND_URL_FOR_N8N), __ALERT_EMAIL_TO__ (ALERT_EMAIL_TO),
-  __ALERT_EMAIL_FROM__ (SMTP_FROM). Workflow files hold no secrets; secrets live in n8n credentials.
+  __ALERT_EMAIL_FROM__ (SMTP_FROM), __TELEGRAM_CHAT_ID__ (TELEGRAM_ALERT_CHAT_ID). Workflow files hold
+  no secrets; secrets live in n8n credentials. When TELEGRAM_BOT_TOKEN and TELEGRAM_ALERT_CHAT_ID are
+  both set, W1 is imported from n8n\workflows\variants\ (alerts go to Telegram, email as fallback).
   -Activate publishes the workflows so their production webhooks answer, then restarts n8n.
 .EXAMPLE
   .\scripts\import-workflows.ps1 -Activate
@@ -31,10 +33,17 @@ $values = @{
     '__ALERT_EMAIL_TO__'   = (Get-EnvValue 'ALERT_EMAIL_TO' 'team@harbor-web.example.com')
     '__ALERT_EMAIL_FROM__' = (Get-EnvValue 'SMTP_FROM' 'hello@harbor-web.example.com')
     '__FRONTEND_URL__'     = (Get-EnvValue 'FRONTEND_PUBLIC_URL' 'http://localhost:3000').TrimEnd('/')
+    '__TELEGRAM_CHAT_ID__' = (Get-EnvValue 'TELEGRAM_ALERT_CHAT_ID' '')
 }
+$telegram = (Get-EnvValue 'TELEGRAM_BOT_TOKEN' '') -and $values['__TELEGRAM_CHAT_ID__']
 
 $files = Get-ChildItem (Join-Path $root 'n8n\workflows') -Filter '*.json' |
     Where-Object { -not $Only -or $_.Name -like "*$Only*" }
+if ($telegram) {
+    $variant = Get-Item (Join-Path $root 'n8n\workflows\variants\rl-w1-lead-intake.telegram.json')
+    $files = @($files | ForEach-Object { if ($_.Name -eq 'rl-w1-lead-intake.json') { $variant } else { $_ } })
+    Write-Host 'Telegram configured: W1 sends High-lead alerts to Telegram (email as fallback).'
+}
 $enc = New-Object System.Text.UTF8Encoding($false)
 $ids = @()
 foreach ($file in $files) {

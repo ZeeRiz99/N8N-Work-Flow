@@ -2,6 +2,15 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-26: Backlog fix pass, slice 1
+
+- **#43 Gemini budget in PostgreSQL:** `usage_counters` with a guarded upsert (`app/core/counters.py`), so the count is shared by every worker and process and survives container restarts; the JSON file is only a fallback when the database is unreachable. Today's count was carried over from the file.
+- **#42 Shared rate limits:** sliding window in `rate_limit_hits`, serialized per key with a transaction advisory lock; falls back to the per-process window if the database is down. Production runs 2 workers again. Tests: 30 parallel takes → exactly 18; 25 parallel hits → exactly 10.
+- **#17 Telegram:** bot @reply_line_bot connected, chat id saved in `.env` (never printed). W1 Telegram variant in `n8n/workflows/variants/`, chosen by `import-workflows.ps1` and `deploy.sh` only when the token and chat id are set. On this network Telegram is reachable only with a system-wide VPN; without it W1 falls back to email (verified: `alert_failed` telegram → `alert_sent` email). Screenshot 08 (bot connection test) cropped from the developer's desktop screenshot, the original moved out of the repo.
+- **#37, #46:** the smoke test approves through the API as a temporary approver and erases its lead afterwards (17/17); it now waits for W1's run log (the Telegram timeout adds about 20 s when Telegram is unreachable). `ui-audit.ps1` runs in a throwaway organization (`create-test-org`, `delete-org`; dev only, refuses the demo orgs; tests added): 2/2 passed.
+- **Screenshots:** recapture with Gemini attempted; Gemini returned 503 on both models and then 429, so the set was recaptured with the offline provider again (labelled). Retry when Gemini is healthy.
+- **Also:** `test_integrations_list…` no longer depends on the developer's `.env` (a real bot token is set now).
+
 ## 2026-11-24: Phase 12 (portfolio and freelance packaging): v1.0.0
 
 - **README** rewritten in the §16.1 order (pitch, demo GIF, problem, status and honesty, architecture, stack, shipped features, screenshots, quick start, configuration, API, workflows, testing, deployment, roadmap, licence) with a CI badge.

@@ -58,7 +58,7 @@ Mailpit · GitHub Actions · pytest · Playwright.
   text is flagged for review and never raises a score.
 - **Score:** deterministic, configurable 7-factor rules (versioned per organization) with a
   plain-language explanation per factor. The AI never sets the number.
-- **Act:** high-priority email alerts, reply drafts with automatic checks (prices from your
+- **Act:** high-priority alerts by email (Telegram optional), reply drafts with automatic checks (prices from your
   service list, no promised dates or discounts, link allow-list, opt-out line added by code), an
   **Approvals queue**, and sending only after a person approves, exactly once.
 - **Keep going:** follow-ups after each sent email, check-ins on quiet leads, contact rules and a
@@ -75,6 +75,7 @@ Mailpit · GitHub Actions · pytest · Playwright.
 | ![Lead detail: AI analysis with quoted evidence](docs/portfolio/final/03-lead-ai-summary-evidence.png) | ![Why this score: the seven factors explained](docs/portfolio/final/04-score-breakdown.png) |
 | ![Approvals queue with a checked reply draft](docs/portfolio/final/05-approvals-draft.png) | ![Automation Center with workflow run history](docs/portfolio/final/06-automation-center.png) |
 | ![Analytics: lead source performance](docs/portfolio/final/09-analytics-sources.png) | ![Public lead form](docs/portfolio/final/10-public-form.png) |
+| ![Telegram bot connected for High-lead alerts](docs/portfolio/final/08-telegram-alert.png) | |
 
 More: [docs/portfolio/](docs/portfolio/) (WebP copies in `final/`).
 
@@ -156,7 +157,7 @@ HTTPS; only Caddy is public, n8n's editor only through an SSH tunnel). On a serv
 
 ## Roadmap
 
-Public deployment · Telegram alerts · Google Sheets "lite" variant · services settings screen ·
+Public deployment · Google Sheets "lite" variant · services settings screen ·
 shared rate limiter for scaling · nonce-based CSP · full 40-case live evaluation · screen-reader
 pass. Open items: [docs/BACKLOG.md](docs/BACKLOG.md).
 

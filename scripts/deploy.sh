@@ -91,7 +91,10 @@ echo "n8n credentials imported"
 echo "--- n8n workflows"
 tmp=$(mktemp -d ./.deploy-tmp.XXXXXX); trap 'rm -rf "$tmp"' EXIT  # relative: works on Linux and Git Bash
 ids=()
+use_tg=""; [ -n "$(val TELEGRAM_BOT_TOKEN)" ] && [ -n "$(val TELEGRAM_ALERT_CHAT_ID)" ] && use_tg=1
 for f in n8n/workflows/rl-w*.json; do
+  # With Telegram configured, W1 comes from the Telegram variant (email stays the fallback).
+  [ -n "$use_tg" ] && [ "$(basename "$f")" = rl-w1-lead-intake.json ] && f=n8n/workflows/variants/rl-w1-lead-intake.telegram.json
   sed -e "s#__BACKEND_URL__#$(val BACKEND_URL_FOR_N8N)#g" \
       -e "s#__ALERT_EMAIL_TO__#$(val ALERT_EMAIL_TO)#g" \
       -e "s#__ALERT_EMAIL_FROM__#$(val SMTP_FROM)#g" \
