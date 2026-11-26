@@ -52,9 +52,12 @@ server yet (the deployment is prepared and rehearsed locally).
 - No testimonials.
 - No accuracy claim beyond the evaluation reports above, always with the sample size.
 - No "production-proven" or uptime claims: it has not run on a public server.
-- Telegram alerts are prepared but **not shipped or demonstrated**: the workflow builder adds the
-  Telegram nodes only with `python n8n/build_p6_workflows.py --telegram` once a bot exists
-  (backlog #17). The shipped workflows alert by email. Show email alerts until then.
+- Telegram alerts are **optional and only partly demonstrated**: W1 has a Telegram variant
+  (`n8n/workflows/variants/`), used when a bot token and chat id are configured, and the bot is
+  connected (screenshot 08 shows its connection test message). A real High-lead alert through W1
+  has not been captured yet, because Telegram is blocked on the dev network without a system-wide
+  VPN; the email fallback for that case is verified. Do not claim "Telegram alerts" without
+  saying this.
 
 ## Screenshots
 
@@ -65,5 +68,5 @@ recapture with Gemini after the budget resets (08:00 UTC): create a temporary ow
 `app.cli create-owner`, run `node scripts/final-shots.mjs <email> <pw-file> ../docs/portfolio/final`
 from `frontend`, then delete the temporary owner. Gemini output appears in
 `p5-02-lead-ai-analysis-and-score.png`. Final set: `docs/portfolio/final/` (1440×900, PNG + WebP). Earlier per-phase
-shots: `docs/portfolio/p*.png`. Shots 7 (n8n canvas) and 8 (Telegram on a phone) are to be
-captured by the developer (see `docs/DEMO_VIDEO_SCRIPT.md`).
+shots: `docs/portfolio/p*.png`. Shot 7 (n8n canvas) is to be captured by the developer; shot 8
+is the Telegram bot's connection test, cropped from a desktop screenshot (see `docs/DEMO_VIDEO_SCRIPT.md`).

@@ -49,8 +49,13 @@ Check 'lead scored by W1' ([bool]$lead.score) "($secs s, score $($lead.score), $
 $isHigh = $lead.priority -eq 'high'
 if ($lead.ai_status -eq 'done') { Check 'priority is high' $isHigh }
 else { Write-Host "SKIP  priority check: AI unavailable (daily Gemini budget?), provisional score" }
-Start-Sleep 3
-$runs = Sql "select string_agg(status || ':' || coalesce(request_id,''), ',') from workflow_executions where lead_id='$($lead.id)'"
+# W1 logs its run at the end (after the alert and the draft). With Telegram configured but
+# unreachable, the Telegram step waits for its timeout before the email fallback: wait for the log.
+for ($i = 0; $i -lt 90; $i++) {
+    $runs = Sql "select string_agg(status || ':' || coalesce(request_id,''), ',') from workflow_executions where lead_id='$($lead.id)'"
+    if ($runs) { break }
+    Start-Sleep 1
+}
 Check 'W1 run logged with request id' ($runs -eq "success:$rid") "($runs)"
 $mail1 = (Invoke-RestMethod "$Mailpit/api/v1/messages").total
 Check 'alert email only when high' (($mail1 - $mail0) -eq [int]$isHigh) "(high=$isHigh)"
@@ -69,27 +74,48 @@ Check 'still one lead and one inquiry' ((Sql "select count(*) from lead_inquirie
 
 Check 'redelivery made no second draft' ((Sql "select count(*) from communication_drafts where lead_id='$($lead.id)'") -eq '1')
 
-# ---- P6: a person approves (same service call as the Approvals screen) -> W4b sends it.
+# ---- P6: a person approves through the API (the same call as the Approvals button) -> W4b
+# sends it. A temporary approver logs in; afterwards the smoke lead is erased and the approver
+# removed, so the demo organization keeps no smoke data (backlog #37, #46).
 $backend = Join-Path (Split-Path $PSScriptRoot -Parent) "backend"
 $py = Join-Path $backend ".venv/Scripts/python.exe"
-$code = "import uuid;from app.core.db import get_session_factory as f;from app.models import CommunicationDraft as D;from app.services import approvals as a`n" +
-        "with f()() as db:`n d=db.get(D,uuid.UUID('$($d[0])'));a.approve(db,d,None);db.commit();print(d.status)"
-Push-Location $backend; $st = (& $py -c $code | Out-String).Trim(); Pop-Location
-Check 'draft approved' ($st -eq 'approved')
-$mail2 = (Invoke-RestMethod "$Mailpit/api/v1/messages").total
-for ($i = 0; $i -lt 40; $i++) { if ((Sql "select status from communication_drafts where id='$($d[0])'") -eq 'sent') { break }; Start-Sleep 1 }
-Check 'W4b sent it (draft sent)' ((Sql "select status from communication_drafts where id='$($d[0])'") -eq 'sent')
-$msgs = Invoke-RestMethod "$Mailpit/api/v1/search?query=to:$email"
-Check 'email delivered to the lead (Mailpit)' ($msgs.messages_count -ge 1)
-Check 'sent logged with message id' ([bool](Sql "select provider_message_id from communication_logs where draft_id='$($d[0])' and status='sent'"))
-Check 'follow-up scheduled in 3 days' ((Sql "select count(*) from follow_ups where lead_id='$($lead.id)' and status='scheduled' and due_at > now() + interval '2 days'") -eq '1')
-$aev = Sql "select id from outbox_events where event_type='draft.approved' and payload->'data'->>'draft_id'='$($d[0])'"
-Sql "update outbox_events set status='pending', next_attempt_at=now() where id='$aev'" | Out-Null
-for ($i = 0; $i -lt 20; $i++) { if ((Sql "select status from outbox_events where id='$aev'") -eq 'delivered') { break }; Start-Sleep 1 }
-Start-Sleep 5
-Check 'approval redelivered: no second email' ((Invoke-RestMethod "$Mailpit/api/v1/search?query=to:$email").messages_count -eq $msgs.messages_count)
-$w4b = Sql "select string_agg(status, ',' order by created_at) from workflow_executions where workflow_key='W4b' and lead_id='$($lead.id)'"
-Check 'W4b runs logged: success then skipped' ($w4b -eq 'success,skipped') "($w4b)"
+$approver = 'smoke.approver@example.com'
+$pwFile = Join-Path $env:TEMP 'replyline-smoke-approver.txt'
+[IO.File]::WriteAllText($pwFile, 'Sm-' + [guid]::NewGuid().ToString('N') + '-Aa1')
+Push-Location $backend; & $py -m app.cli create-owner harbor-web $approver $pwFile | Out-Null; Pop-Location
+$h = @{ 'X-Requested-With' = 'replyline' }
+try {
+    $login = @{ email = $approver; password = [IO.File]::ReadAllText($pwFile) } | ConvertTo-Json
+    Invoke-RestMethod "$Api/api/v1/auth/login" -Method Post -Body $login -ContentType 'application/json' -Headers $h -SessionVariable web | Out-Null
+    $ap = Invoke-RestMethod "$Api/api/v1/drafts/$($d[0])/approve" -Method Post -Headers $h -WebSession $web
+    Check 'draft approved through the API' ($ap.status -in @('approved', 'sending', 'sent')) "($($ap.status))"
+    $mail2 = (Invoke-RestMethod "$Mailpit/api/v1/messages").total
+    for ($i = 0; $i -lt 40; $i++) { if ((Sql "select status from communication_drafts where id='$($d[0])'") -eq 'sent') { break }; Start-Sleep 1 }
+    Check 'W4b sent it (draft sent)' ((Sql "select status from communication_drafts where id='$($d[0])'") -eq 'sent')
+    $msgs = Invoke-RestMethod "$Mailpit/api/v1/search?query=to:$email"
+    Check 'email delivered to the lead (Mailpit)' ($msgs.messages_count -ge 1)
+    Check 'sent logged with message id' ([bool](Sql "select provider_message_id from communication_logs where draft_id='$($d[0])' and status='sent'"))
+    Check 'follow-up scheduled in 3 days' ((Sql "select count(*) from follow_ups where lead_id='$($lead.id)' and status='scheduled' and due_at > now() + interval '2 days'") -eq '1')
+    $aev = Sql "select id from outbox_events where event_type='draft.approved' and payload->'data'->>'draft_id'='$($d[0])'"
+    Sql "update outbox_events set status='pending', next_attempt_at=now() where id='$aev'" | Out-Null
+    for ($i = 0; $i -lt 20; $i++) { if ((Sql "select status from outbox_events where id='$aev'") -eq 'delivered') { break }; Start-Sleep 1 }
+    Start-Sleep 5
+    Check 'approval redelivered: no second email' ((Invoke-RestMethod "$Mailpit/api/v1/search?query=to:$email").messages_count -eq $msgs.messages_count)
+    $w4b = Sql "select string_agg(status, ',' order by created_at) from workflow_executions where workflow_key='W4b' and lead_id='$($lead.id)'"
+    Check 'W4b runs logged: success then skipped' ($w4b -eq 'success,skipped') "($w4b)"
+} finally {
+    if ($web -and $runs) {
+        try {
+            Invoke-RestMethod "$Api/api/v1/leads/$($lead.id)" -Method Delete -Headers $h -WebSession $web | Out-Null
+            Write-Host 'Smoke lead erased from the demo organization.'
+        } catch { Write-Host "WARN  could not erase the smoke lead: $($_.Exception.Message)" }
+    }
+    Remove-Item $pwFile -ErrorAction SilentlyContinue
+    Push-Location $backend
+    & $py -c "from sqlalchemy import delete;from app.core.db import get_session_factory as f;from app.models import RefreshToken,OrganizationMember,User`nwith f()() as db:`n u=db.query(User).filter_by(email='$approver').first()`n if u:`n  db.execute(delete(RefreshToken).where(RefreshToken.user_id==u.id));db.execute(delete(OrganizationMember).where(OrganizationMember.user_id==u.id));db.delete(u);db.commit()"
+    Pop-Location
+    Write-Host 'Temporary approver removed.'
+}
 
 if ($failed) { Write-Host "$failed check(s) failed."; exit 1 }
 Write-Host 'All smoke checks passed.'

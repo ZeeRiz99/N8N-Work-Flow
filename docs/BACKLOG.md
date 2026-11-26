@@ -32,7 +32,7 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | 14 | Public-form rate limit is in memory, per process; restarts reset it and several workers would not share it | `app/api/deps.py` | P10: move to PostgreSQL or Redis-backed limits behind the reverse proxy |
 | 15 | ~~Dashboard reads use temporary dev access~~ **Fixed in P4** (login, cookies, roles; dev path deleted) | — | — |
 | 16 | W1 does analyze, alert and logging inline; W0 (Log Run) and W3 (alert) are not separate sub-workflows yet | `n8n/workflows/rl-w1-lead-intake.json` | P6: split into W0, W2, W3, W4 sub-workflows as in master prompt §9.3 |
-| 17 | Alerts go by email only; Telegram waits for the bot token and a system-wide VPN | W1 | P3 follow-up as soon as the bot exists (ADR 005) |
+| 17 | Alerts go by email only; Telegram waits for the bot token and a system-wide VPN | W1 | **Fixed 2026-11-26:** Telegram variant of W1 (`n8n/workflows/variants/`), used by the import scripts when the bot token and chat id are set; bot @reply_line_bot connected; email fallback verified when Telegram is unreachable. A successful W1 delivery needs a system-wide VPN on this network |
 | 18 | After a cold backend start, the first outbox delivery can take a few seconds longer than the 1.2 s warm path | outbox worker | Measure in P7 demo rehearsal; pre-warm the backend before demos |
 | 19 | Frontend API client is hand-written | `frontend/src/lib/api.ts` | Partly fixed in P4: types generated from OpenAPI (`npm run gen:api`) for auth and settings; see #20 |
 
@@ -67,7 +67,7 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | # | Limit | Where | Fix later |
 |---|---|---|---|
 | 36 | W1 runs analyze, alert and draft inline instead of calling W2/W3/W4 sub-workflows (§9.3) | `n8n/workflows/rl-w1-lead-intake.json` | Split into Execute-Workflow sub-workflows once n8n workflow ids are pinned in the import script |
-| 37 | The smoke test approves through the service layer (no browser login in the script) | `scripts/smoke.ps1` | Approve through the API with a smoke user, or via Playwright |
+| 37 | The smoke test approves through the service layer (no browser login in the script) | `scripts/smoke.ps1` | **Fixed 2026-11-26:** the smoke test logs in as a temporary approver and approves through `POST /drafts/{id}/approve`, then erases its lead |
 | 38 | n8n holds one service key, scoped to one organization; approved drafts in other organizations are never claimed for sending (claim-send is org-scoped) | `api/deps.py`, n8n credentials | Platform service key (scope `internal:any-org`) that resolves the org from the draft or lead id; or one n8n credential per org |
 | 39 | Frontend CSP still allows unsafe-inline for scripts/styles (Next.js bootstrap) | `frontend/next.config.ts` | Nonce-based CSP through middleware |
 | 40 | Screen-reader pass (NVDA) not done yet; axe and keyboard checks only | frontend | Manual NVDA walk of the journey before launch |
@@ -77,8 +77,8 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | # | Limit | Where | Fix later |
 |---|---|---|---|
 | 41 | Not live: needs a server, a domain, DNS records and a real SMTP service (purchases are the developer's call) | `docs/DEPLOYMENT.md` | Follow the runbook, then run the journey on the real domain |
-| 42 | Rate limits are in memory per process, so the backend runs 1 worker | `api/deps.py`, `backend/Dockerfile` | Shared limiter (PostgreSQL or Redis) before adding workers |
-| 43 | The Gemini daily budget file lives in the container's /tmp and resets when the backend container is recreated | `infra/compose.prod.yml` | Small volume for the counter, or keep the count in PostgreSQL |
+| 42 | Rate limits are in memory per process, so the backend runs 1 worker | `api/deps.py`, `backend/Dockerfile` | **Fixed 2026-11-26:** rate limits are a sliding window in PostgreSQL (`rate_limit_hits`, advisory lock per key), shared by all workers; production runs 2 workers again |
+| 43 | The Gemini daily budget file lives in the container's /tmp and resets when the backend container is recreated | `infra/compose.prod.yml` | **Fixed 2026-11-26:** the daily Gemini budget is an atomic counter in PostgreSQL (`usage_counters`); the file is only a fallback |
 | 44 | Backups stay on the server; copying them off-site is manual | `scripts/backup-prod.sh` | rclone/restic job to object storage |
 
 ## From Phase 12
@@ -86,4 +86,4 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | # | Limit | Where | Fix later |
 |---|---|---|---|
 | 45 | The service catalog and response-time line are edited through the API only; no settings screen | `api/v1/org.py`, frontend settings | Settings → Services screen |
-| 46 | UI-audit spec ran against the demo org and left edited drafts behind (fixed: it now restores the text); smoke and audit runs still add test leads to the demo org | `frontend/e2e/ui-audit.spec.ts`, `scripts/smoke.ps1` | Run audits in a throwaway org like `journey.ps1` does |
+| 46 | UI-audit spec ran against the demo org and left edited drafts behind (fixed: it now restores the text); smoke and audit runs still add test leads to the demo org | `frontend/e2e/ui-audit.spec.ts`, `scripts/smoke.ps1` | **Fixed 2026-11-26:** `ui-audit.ps1` runs in a throwaway organization (`create-test-org` / `delete-org`); the smoke test erases its own lead |

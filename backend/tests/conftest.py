@@ -15,6 +15,10 @@ from pathlib import Path
 os.environ.setdefault("APP_SECRET_KEY", "test-only-secret-not-for-real-use-0123456789abcdef")
 # Tests never call a paid or rate-limited API: the offline provider runs the same pipeline.
 os.environ["AI_PROVIDER"] = "fake"
+# Counters: in-memory rate limits and a per-test budget file; the PostgreSQL stores have their
+# own tests (test_counters.py) against the test database.
+os.environ["RATE_LIMIT_STORE"] = "memory"
+os.environ["AI_USAGE_STORE"] = "file"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

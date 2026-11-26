@@ -1,5 +1,6 @@
 """Shared FastAPI dependencies: users and roles, service-key auth, CSRF, client IP, rate limits."""
 
+import logging
 import threading
 import time
 import uuid
@@ -13,11 +14,14 @@ from fastapi import Depends, Header, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core import counters
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.security import hash_key
 from app.models import ApiKey, Organization, OrganizationMember, User
 from app.services.auth import AuthError, decode_access_token
+
+log = logging.getLogger(__name__)
 
 DbSession = Annotated[Session, Depends(get_db)]
 ACCESS_COOKIE = "rl_access"
@@ -158,13 +162,24 @@ ServiceOrg = Annotated[Organization, Depends(require_service_key)]
 
 
 class RateLimiter:
-    """In-memory sliding window per key. Fine for one dev process; P10 hardens it (backlog #14)."""
+    """Sliding window per key. In production the window lives in PostgreSQL, shared by every
+    worker (backlog #42); the in-memory window is for tests and the fallback if the database
+    is unreachable (then each worker limits on its own rather than failing every request)."""
 
-    def __init__(self) -> None:
+    def __init__(self, name: str) -> None:
+        self.name = name
         self._hits: dict[str, deque[float]] = defaultdict(deque)
         self._lock = threading.Lock()
 
     def check(self, key: str, limit: int, window_seconds: float = 60.0) -> bool:
+        if get_settings().rate_limit_store == "db":
+            try:
+                return counters.hit(f"{self.name}:{key}", limit, window_seconds)
+            except Exception:  # noqa: BLE001 - never turn a counter outage into a 500
+                log.warning("rate_limit_db_unavailable limiter=%s", self.name)
+        return self._check_memory(key, limit, window_seconds)
+
+    def _check_memory(self, key: str, limit: int, window_seconds: float) -> bool:
         now = time.monotonic()
         with self._lock:
             hits = self._hits[key]
@@ -176,9 +191,9 @@ class RateLimiter:
             return True
 
 
-public_form_limiter = RateLimiter()
-login_limiter = RateLimiter()
-ai_limiter = RateLimiter()  # interactive AI calls (playground, Q&A, drafts) per user
+public_form_limiter = RateLimiter("public_form")
+login_limiter = RateLimiter("login")
+ai_limiter = RateLimiter("ai")  # interactive AI calls (playground, Q&A, drafts) per user
 
 
 def public_form_rate_limit(request: Request) -> None:

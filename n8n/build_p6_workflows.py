@@ -112,6 +112,7 @@ def link(*pairs):
 
 
 def save(name, data):
+    (HERE / name).parent.mkdir(parents=True, exist_ok=True)
     (HERE / name).write_text(
         json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
     )
@@ -380,14 +381,16 @@ def add_alert_log():
 TELEGRAM = {"telegramApi": {"id": "rlCredTelegram01", "name": "RL Telegram Bot"}}
 
 
+TELEGRAM_VARIANT = "variants/rl-w1-lead-intake.telegram.json"
+
+
 def add_telegram():
-    """Only when the Telegram bot credential exists (python build_p6_workflows.py --telegram):
-    W1 sends the alert to Telegram; on failure it falls back to email and logs the failure,
-    which makes the backend alert the admin (the lead is never affected)."""
-    path = HERE / "rl-w1-lead-intake.json"
-    w1 = json.loads(path.read_text(encoding="utf-8"))
-    if any(n["name"] == "Telegram the team" for n in w1["nodes"]):
-        return
+    """The Telegram variant of W1 (python build_p6_workflows.py --telegram), written to
+    n8n/workflows/variants/ so the default W1 stays email-only. The import scripts use it only
+    when TELEGRAM_BOT_TOKEN and TELEGRAM_ALERT_CHAT_ID are set. W1 then sends the alert to
+    Telegram; on failure it falls back to email and logs the failure, which makes the backend
+    alert the admin (the lead is never affected)."""
+    w1 = json.loads((HERE / "rl-w1-lead-intake.json").read_text(encoding="utf-8"))
     lead = "$('Lead created').item.json.body"
     tg = {
         "parameters": {
@@ -430,7 +433,7 @@ def add_telegram():
             ],
         ]
     }
-    save(path.name, w1)
+    save(TELEGRAM_VARIANT, w1)
 
 
 if __name__ == "__main__":

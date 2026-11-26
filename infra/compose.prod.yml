@@ -89,7 +89,7 @@ services:
       GEMINI_DAILY_BUDGET: ${GEMINI_DAILY_BUDGET:-18}
       AI_DAILY_CALL_CAP: ${AI_DAILY_CALL_CAP:-500}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      AI_USAGE_FILE: /tmp/replyline-ai-usage.json   # writable; the daily budget counter
+      AI_USAGE_FILE: /tmp/replyline-ai-usage.json   # fallback only; the budget is counted in PostgreSQL
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       N8N_WEBHOOK_BASE_URL: http://n8n:5678/webhook/rl

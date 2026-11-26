@@ -12,7 +12,13 @@ from app.models.communication import (
 from app.models.crm import LeadSource, PipelineStage, Service
 from app.models.duplicates import DuplicateCandidate
 from app.models.leads import Lead, LeadInquiry
-from app.models.reliability import IdempotencyKey, OutboxEvent, WorkflowExecution
+from app.models.reliability import (
+    IdempotencyKey,
+    OutboxEvent,
+    RateLimitHit,
+    UsageCounter,
+    WorkflowExecution,
+)
 from app.models.tenancy import (
     ApiKey,
     Invitation,
@@ -23,6 +29,8 @@ from app.models.tenancy import (
 )
 
 __all__ = [
+    "RateLimitHit",
+    "UsageCounter",
     "ApiKey",
     "Invitation",
     "AuditLog",

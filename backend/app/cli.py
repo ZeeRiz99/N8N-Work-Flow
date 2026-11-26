@@ -408,12 +408,88 @@ def create_owner() -> int:
     return 0
 
 
+def create_test_org() -> int:
+    """Development and tests only: a throwaway organization (default stages, sources and demo
+    services) for audits, so they never touch the demo data. Add an owner with create-owner and
+    leads with sample-data --org. Usage: create-test-org <slug>"""
+    from app.services.org import provision_defaults, provision_demo_services
+
+    if get_settings().app_env != "development":
+        print("create-test-org is only available in development.")
+        return 1
+    if len(sys.argv) < 3:
+        print("Usage: create-test-org <slug>")
+        return 2
+    slug = sys.argv[2]
+    with get_session_factory()() as db:
+        if db.scalar(select(Organization).where(Organization.slug == slug)):
+            print(f"Organization '{slug}' already exists.")
+            return 1
+        org = Organization(
+            name="Audit Studio",
+            slug=slug,
+            public_form_key=new_public_form_key(),
+            currency="USD",
+            settings={**DEMO_SETTINGS},
+        )
+        db.add(org)
+        db.flush()
+        provision_defaults(db, org.id)
+        provision_demo_services(db, org.id, org.currency)
+        db.commit()
+    print(f"Created test organization '{slug}'.")
+    return 0
+
+
+def delete_org() -> int:
+    """Development only: delete a throwaway organization and everything in it (cascade), plus
+    users left without any organization. Refuses the demo organizations.
+    Usage: delete-org <slug>"""
+    from sqlalchemy import delete
+
+    from app.models import OrganizationMember, User
+
+    if get_settings().app_env != "development":
+        print("delete-org is only available in development.")
+        return 1
+    if len(sys.argv) < 3:
+        print("Usage: delete-org <slug>")
+        return 2
+    slug = sys.argv[2]
+    if slug in (get_settings().demo_org_slug, PORTFOLIO_SLUG):
+        print(f"Refusing to delete the demo organization '{slug}'.")
+        return 1
+    with get_session_factory()() as db:
+        org = db.scalar(select(Organization).where(Organization.slug == slug))
+        if org is None:
+            print(f"No organization '{slug}'.")
+            return 1
+        member_ids = list(
+            db.scalars(
+                select(OrganizationMember.user_id).where(
+                    OrganizationMember.organization_id == org.id
+                )
+            )
+        )
+        db.delete(org)
+        db.flush()
+        for uid in member_ids:
+            still = db.scalar(select(OrganizationMember).where(OrganizationMember.user_id == uid))
+            if still is None:
+                db.execute(delete(User).where(User.id == uid))
+        db.commit()
+    print(f"Deleted organization '{slug}'.")
+    return 0
+
+
 COMMANDS = {
     "seed-demo": seed_demo,
     "set-demo-owner": set_demo_owner,
     "seed-portfolio": seed_portfolio,
     "sample-data": sample_data,
     "create-owner": create_owner,
+    "create-test-org": create_test_org,
+    "delete-org": delete_org,
 }
 
 if __name__ == "__main__":
