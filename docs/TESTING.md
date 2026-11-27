@@ -30,7 +30,7 @@ that need AI use the offline provider (`AI_PROVIDER=fake`), so they never spend 
 `.\.venv\Scripts\python ..\evals\run_eval.py --provider gemini --sample 15` runs a stratified
 sample and writes a report to `evals/reports/`. It stops cleanly at the daily budget
 (`GEMINI_DAILY_BUDGET`) and resumes from `evals/cache/`. Latest:
-[`2026-11-23-gemini-sample15.md`](../evals/reports/2026-11-23-gemini-sample15.md) (14 cases).
+[`2026-11-27-gemini.md`](../evals/reports/2026-11-27-gemini.md) (25 of 40 cases).
 
 ## Not covered yet
 

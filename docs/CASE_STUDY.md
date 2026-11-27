@@ -72,16 +72,16 @@ through an SSH tunnel only.
 - 361 backend tests, 4 Playwright suites, a 16-step journey run 3 times from a clean database
   (including killing the backend mid-flow), failure injection and a load smoke (130 concurrent
   submissions → exactly 100 leads, no duplicates).
-- Live Gemini evaluation on **14 scored fictional inquiries** (stratified sample of a 40-case
-  dataset): priority band agreement 93%, service and budget extraction 100%, grounding rejected
-  1 of 62 claims, no schema-invalid output, mean latency 10.2 s. A small sample: one case moves a
-  percentage by about 7 points, and the expected labels are one person's judgment.
+- Live Gemini evaluation on **25 of 40 fictional inquiries** so far: priority band agreement
+  88%, band within one step 100%, service and budget extraction 100%, grounding rejected 1 of
+  125 claims, no schema-invalid output, mean latency 8.6 s. A small sample: one case moves a
+  percentage by 4 points, and the expected labels are one person's judgment.
 
 ## Limitations
 
 - Not yet deployed on a public server (the production setup is built and rehearsed locally).
 - Telegram alerts are prepared but not shipped; alerts go by email.
-- The live AI evaluation covers 14 cases; the full 40-case run is pending.
+- The live AI evaluation covers 25 of 40 cases so far (free-tier daily limit).
 - Rate limits are per process, so production runs one backend worker.
 - No screen-reader (NVDA) pass yet; axe and keyboard checks only.
 

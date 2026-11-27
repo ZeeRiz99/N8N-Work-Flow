@@ -45,8 +45,8 @@ server yet (the deployment is prepared and rehearsed locally).
 | 361 automated backend tests | `pytest --co` on 2026-11-24 | Count of tests, not a quality measure |
 | 4 Playwright suites (CRM journey, MVP journey, UI audit, accessibility) | `frontend/e2e/` | |
 | 9 n8n workflows (W1, W4b, W5, W6, W7, W8, W9, W9b, W10) | `n8n/workflows/` | W2/W3/W4 run inline inside W1 (backlog #36) |
-| Gemini priority-band agreement 93%, service and budget extraction 100%, 1 of 62 claims rejected by grounding, 0 schema-invalid outputs | `evals/reports/2026-11-23-gemini-sample15.md` | **14 scored cases** from a 15-case stratified sample of 40 fictional inquiries; expected labels are one person's judgment; one case moves a percentage by about 7 points |
-| Gemini mean latency 10.2 s, p95 13.7 s | same report | Free tier, one day |
+| Gemini priority-band agreement 88%, band within one step 100%, service and budget extraction 100%, 1 of 125 claims rejected by grounding, 0 schema-invalid outputs | `evals/reports/2026-11-27-gemini.md` | **25 of 40** fictional inquiries scored so far (free-tier daily limit); two Gemini Flash models (3.6 for the first 14, 3.5 after 3.6 started timing out); expected labels are one person's judgment; one case moves a percentage by 4 points |
+| Gemini mean latency 8.6 s, p95 12.8 s | same report | Free tier |
 | Offline provider: band agreement 72%, band within one step 100% (40 cases) | `evals/reports/2026-11-23-fake.md` | The offline provider is a rules-based stand-in used for tests and demos |
 
 ## Claims we do **not** make
@@ -58,11 +58,6 @@ server yet (the deployment is prepared and rehearsed locally).
 ## Screenshots
 
 All screenshots use fictional organizations and people (`@example.com` addresses), taken from
-the running app. The final set and the demo GIF were captured on 2026-11-24 with the **offline AI
-provider** (the lead page says "offline AI"), because the day's Gemini budget was spent. To
-recapture with Gemini after the budget resets (08:00 UTC): create a temporary owner with
-`app.cli create-owner`, run `node scripts/final-shots.mjs <email> <pw-file> ../docs/portfolio/final`
-from `frontend`, then delete the temporary owner. Gemini output appears in
-`p5-02-lead-ai-analysis-and-score.png`. Final set: `docs/portfolio/final/` (1440×900, PNG + WebP). Earlier per-phase
+the running app. The final set and the demo GIF were captured on 2026-11-27 with **Gemini** (`gemini-3.5-flash`): the analysis, evidence quotes and reply draft in shots 03–05 are real model output. To recapture: create a temporary owner with `app.cli create-owner`, run `node scripts/final-shots.mjs <email> <pw-file> ../docs/portfolio/final` from `frontend`, then delete the temporary owner. Final set: `docs/portfolio/final/` (1440×900, PNG + WebP). Earlier per-phase
 shots: `docs/portfolio/p*.png`. Shot 7 (n8n canvas) is to be captured by the developer; shot 8
 is a real W1 alert in Telegram Desktop, cropped to the bot chat (see `docs/DEMO_VIDEO_SCRIPT.md`).
