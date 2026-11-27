@@ -173,5 +173,4 @@ pass. Open items: [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## License
 
-All rights reserved until the licence is decided (see master prompt §16.7). The repository is
-private.
+All rights reserved: the code is public to read and evaluate, not to reuse. See [LICENSE](LICENSE).

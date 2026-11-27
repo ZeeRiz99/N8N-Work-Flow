@@ -1,0 +1,10 @@
+Copyright (c) 2026 ZeeRiz99. All rights reserved.
+
+This repository is published so that its code can be read and evaluated as a portfolio project.
+No licence is granted to copy, modify, distribute, sublicense, host or use this software, in whole
+or in part, for any purpose, without prior written permission from the copyright holder.
+
+Third-party components keep their own licences (see the dependency manifests). n8n is used under
+its Sustainable Use License; nothing in this repository grants any right to n8n itself.
+
+To ask about using or licensing this work, contact the author through GitHub (@ZeeRiz99).

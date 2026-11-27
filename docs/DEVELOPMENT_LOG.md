@@ -2,6 +2,11 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-27: Repository made public (all rights reserved)
+
+- Developer's decision: public, all rights reserved (master prompt §16.7). `LICENSE` added; README licence section updated.
+- Pre-publish check: no `.env` ever committed, full-history secret scan clean (CI), no email or real phone numbers (only fictional `555` test numbers and the public GitHub username), no local PC paths.
+
 ## 2026-11-27: v1.1.0 released
 
 - Wrapped up on the 25-of-40 evaluation (developer's decision); the remaining 15 cases are optional and resume from the cache.
