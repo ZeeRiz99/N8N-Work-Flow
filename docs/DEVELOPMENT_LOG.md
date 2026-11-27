@@ -2,6 +2,11 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-27: v1.1.0 released
+
+- Wrapped up on the 25-of-40 evaluation (developer's decision); the remaining 15 cases are optional and resume from the cache.
+- v1.1.0 = v1.0.0 + backlog fixes (#17, #37, #38, #42, #43, #45, #46), #39 decided (ADR 012), facts-only alerts, real Telegram alert, Gemini screenshots, evaluation 25/40.
+
 ## 2026-11-27: Gemini screenshots and evaluation (25 of 40)
 
 - Probes, one call each: `gemini-3.6-flash` returned 504 after 30 s; `gemini-3.5-flash` answered in 6.8 s. The backend and the evaluation ran with `GEMINI_MODEL=gemini-3.5-flash` (env override, no code change) so no budget went to the timing-out model.

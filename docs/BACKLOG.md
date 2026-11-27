@@ -60,7 +60,7 @@ Each phase logs its known limits here. They are fixed together after the last bu
 | 32 | Follow-up eligibility cannot see customer replies (no inbound tracking yet) | `services/assistant.py` | P6/P8: communication logs feed the "no reply" rule |
 | 33 | The playground shows "None found" when the AI is unavailable (no facts without the model) | `/assistant` | Optionally show the offline keyword view, clearly labelled |
 | 34 | Sample-data names use simple combinations; a twin's typo is "a" doubled, which looks odd ("Hinaa") | `services/sample_data.py` | Use a small typo list (swap, drop a letter) |
-| 35 | Live Gemini eval covers 14 of 40 cases (budget-limited); the rest resume from the cache on later days | `evals/` | **In progress 2026-11-27:** 25 of 40 cases scored (report `2026-11-27-gemini.md`); the last 15 fit one more day's budget. Use `GEMINI_MODEL=gemini-3.5-flash` while 3.6 times out |
+| 35 | Live Gemini eval covers 14 of 40 cases (budget-limited); the rest resume from the cache on later days | `evals/` | **Wrapped 2026-11-27 at 25 of 40** (report `2026-11-27-gemini.md`); every public number states the sample size. The last 15 cases are optional: run `run_eval.py --provider gemini` after a budget reset with `GEMINI_MODEL=gemini-3.5-flash`; it resumes from the cache |
 
 ## From Phase 6
 
