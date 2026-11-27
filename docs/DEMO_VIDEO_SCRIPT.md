@@ -37,8 +37,8 @@ up today (or set `AI_PROVIDER=fake` and say "offline AI" on screen). Prepare the
    backend: the lead is processed, nothing lost, nothing sent twice.
 5. **Prompt injection (20 s):** open the "Sam Taylor" lead in the portfolio org: flagged for
    review, score not raised.
-6. **Evaluation (20 s):** `evals/reports/2026-11-23-gemini-sample15.md`. Say the sample size
-   (14 cases) out loud.
+6. **Evaluation (20 s):** `evals/reports/2026-11-27-gemini.md`. Say the sample size
+   (25 of 40 cases so far) out loud.
 
 ## Screenshots to capture by hand
 

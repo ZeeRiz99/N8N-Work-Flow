@@ -25,7 +25,7 @@ automation; the backend makes every decision; a person approves every outbound m
   revenue, no time-saving or conversion claims.
 - **All data is fictional** (`@example.com` addresses, invented companies).
 - AI accuracy numbers come only from committed evaluation reports, with the sample size stated:
-  the live Gemini evaluation covers **14 scored cases**.
+  the live Gemini evaluation covers **25 of 40 cases** so far.
 - The production setup is built and rehearsed locally but **not deployed on a public server**.
 - Every public claim maps to evidence in [docs/PORTFOLIO_CLAIMS.md](docs/PORTFOLIO_CLAIMS.md).
 
@@ -144,10 +144,10 @@ W8 daily summary, W9 error monitor, W9b retry sweeper, W10 source performance):
 361 backend tests, 4 Playwright suites, journey, smoke, failure-injection, load and restore
 scripts: [docs/TESTING.md](docs/TESTING.md).
 
-**AI evaluation:** [`evals/reports/2026-11-23-gemini-sample15.md`](evals/reports/2026-11-23-gemini-sample15.md),
-a live Gemini run on 14 scored fictional inquiries (stratified sample of a 40-case dataset):
-priority band agreement 93%, service and budget extraction 100%, grounding rejected 1 of 62
-claims, no schema-invalid output. A small sample: one case moves a percentage by about 7 points.
+**AI evaluation:** [`evals/reports/2026-11-27-gemini.md`](evals/reports/2026-11-27-gemini.md), a live Gemini run on 25 of 40 fictional
+inquiries so far (the free tier allows 18 calls a day): priority band agreement 88%, band
+within one step 100%, service and budget extraction 100%, grounding rejected 1 of 125 claims,
+no schema-invalid output. A small sample: one case moves a percentage by 4 points.
 
 ## Deployment
 

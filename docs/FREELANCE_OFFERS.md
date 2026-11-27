@@ -121,6 +121,6 @@ verified steps, document everything, and hand over workflows you own.
    decides. Here's why I kept business logic out of the workflows."
 3. **Keeping AI from making things up:** grounding (every fact needs a quote), deterministic
    scoring, the prompt-injection corpus, human approval. Include the evaluation numbers with
-   "14 cases" stated.
+   "25 of 40 cases" stated.
 4. **The demo:** the 90-second video. "A self-built portfolio project; code and case study in
    the comments."

@@ -2,6 +2,12 @@
 
 Newest first. Every new dependency gets a one-line justification here (contract rule C13).
 
+## 2026-11-27: Gemini screenshots and evaluation (25 of 40)
+
+- Probes, one call each: `gemini-3.6-flash` returned 504 after 30 s; `gemini-3.5-flash` answered in 6.8 s. The backend and the evaluation ran with `GEMINI_MODEL=gemini-3.5-flash` (env override, no code change) so no budget went to the timing-out model.
+- **Screenshots** recaptured with Gemini: real analysis, evidence quotes and a Gemini-written reply draft (all checks passed). 2 calls. Temporary owner removed.
+- **Evaluation** resumed from the cache: 25 of 40 cases scored, stopped exactly at the cap (18 of 18 today). Band agreement 88%, within one step 100%, service and budget 100%, grounding rejected 1 of 125, 0 schema-invalid, mean latency 8.6 s. README, case study, claims, testing, video script and offers updated. The last 15 cases fit tomorrow's budget.
+
 ## 2026-11-27: Telegram alert delivered; alerts are facts-only
 
 - With a full-PC VPN on, both the PC and the n8n container reached Telegram. A fictional High lead (offline provider) went through W1 and the alert was delivered to @reply_line_bot (n8n run 278, 1.7 s, Telegram message id returned).
